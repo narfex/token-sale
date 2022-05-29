@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
-// uising PancakeFactory to get price of Narfex in BUSD
+// using PancakeFactory to get price of Narfex in BUSD
 abstract contract PancakeFactory {
     function getPair(address _token0, address _token1) external view virtual returns (address pairAddress);
 }
