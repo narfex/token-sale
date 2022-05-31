@@ -1,7 +1,7 @@
 ## ***How to participate in the purchase `Narfex`***
 1. Sale starts when `owner` (deployer) deploy this smart contract in mainnet, you have `timeEndSale` in seconds to participate in the `token-sale`
 
-2. To participate in the `token-sale`, the user must be authorized to buy. To do this, the owner (deployer) of the contract must add him to the `whitelist`
+2. To participate in the `token-sale`, you must be authorized to buy. To do this, the owner (deployer) of the contract must add him to the `whitelist`
 ```solidity
     function addWhitelist(address _address)
 ```
