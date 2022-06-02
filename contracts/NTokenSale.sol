@@ -104,14 +104,9 @@ contract NTokenSale {
         return a / b;
     }
 
-<<<<<<< HEAD
-    // users buy locked tokens by transferring BUSD to this contract 
-    function buyTokens(uint256 amount) public onlyWhitelisted {
-=======
     /// @notice users buy locked tokens by transferring BUSD to this contract 
     /// @param amount Amount of BUSD tokens to deposit
     function buyTokens(uint256 amount) public onlyWhitelisted(){
->>>>>>> 553f7ee33d1f47491d90328ed6772415fb8faff3
         address _msgSender = msg.sender; 
 
         require(block.timestamp - timeStartSale < timeEndSale, "Sorry, sale already end");
@@ -237,11 +232,9 @@ contract NTokenSale {
         }
     }
 
-<<<<<<< HEAD
     function getBalanceBUSD() public returns(uint256){
         return busdAddress.balanceOf(address(this));
     }
 }
-=======
-}
->>>>>>> 553f7ee33d1f47491d90328ed6772415fb8faff3
+
+
