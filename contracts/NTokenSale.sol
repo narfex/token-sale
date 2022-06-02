@@ -12,10 +12,11 @@ abstract contract PancakePair {
     function getReserves() public view virtual returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast);
 }
 
-interface IERC20 {
+interface IBEP20 {
     function balanceOf(address _owner) external returns (uint256);
     function transfer(address _to, uint256 _amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function decimals() external view returns (uint256);
 }
 
 
@@ -40,8 +41,8 @@ contract NTokenSale {
 
     mapping (address => Buyer) public buyers; 
 
-    IERC20 public tokenContract;  // the token being sold
-    IERC20 public busdAddress; // payment token address
+    IBEP20 public tokenContract;  // the token being sold
+    IBEP20 public busdAddress; // payment token address
     address owner; // deployer of contract 
     uint256 public saleSupply; // the number of tokens available for purchase 
     uint256 public timeStartSale; // starting sale point
@@ -59,13 +60,13 @@ contract NTokenSale {
     event Withdraw(address buyer, uint256 amount);
 
     constructor (
-        IERC20  _tokenContract,
-        IERC20 _busdAddress,
+        IBEP20  _tokenContract, 
+        IBEP20 _busdAddress,
         uint256 _saleSupply,
         uint256 _timeEndSale,
-        address _factory,
+        address _factory, //0x043C37847dEE7f0657C45f4b7379DeE320aD9F18
         address _BUSD,
-        address _NarfexAddress,
+        address _NarfexAddress, //0xcDA8eD22bB27Fe84615f368D09B5A8Afe4a99320
         uint256 _firstNarfexPrice
         ) {
         
@@ -79,6 +80,7 @@ contract NTokenSale {
         firstNarfexPrice = _firstNarfexPrice;
         timeStartSale = block.timestamp;
         owner = msg.sender;
+        buyers[owner].whitelisted = true;
     }
 
     // verification of private purchase authorization
@@ -87,40 +89,39 @@ contract NTokenSale {
         _;
     }
 
-    // // Guards against integer overflows
-    // function safeMul(uint256 a, uint256 b) internal pure returns (uint256) {
-    //     if (a == 0) {
-    //         return 0;
-    //     } else {
-    //         uint256 c = a * b;
-    //         assert(c / a == b);
-    //         return c;
-    //     }
-    // }
+    //Guards against integer overflows
+    function safeMul(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a == 0) {
+            return 0;
+        } else {
+            uint256 c = a * b;
+            assert(c / a == b);
+            return c;
+        }
+    }
 
-    // // Guards for div
-    // function safeDiv(uint256 a, uint256 b) internal pure returns (uint256) {
-    //     require(b > 0, "SafeMath: division by zero");
-    //     return a / b;
-    // }
+    // Guards for div
+    function safeDiv(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b > 0, "SafeMath: division by zero");
+        return a / b;
+    }
 
     // users buy locked tokens by transferring BUSD to this contract 
-    function buyTokens(uint256 amount) public onlyWhitelisted(){
+    function buyTokens(uint256 amount) public onlyWhitelisted {
         address _msgSender = msg.sender; 
 
         require(block.timestamp - timeStartSale < timeEndSale, "Sorry, sale already end");
         
-        uint256 scaledAmount = amount / firstNarfexPrice;
+        uint256 scaledAmount = amount * WAD * 10 / 4;
 
-        require(scaledAmount <= saleSupply, "You can not buy more than maximum supply");
-        require(tokenContract.balanceOf(address(this)) >= scaledAmount);
-
-        saleSupply -= scaledAmount;
+        require(scaledAmount <= (saleSupply * WAD), "You can not buy more than maximum supply");
+        //require(tokenContract.balanceOf(address(this)) >= scaledAmount);
+        saleSupply = saleSupply * WAD - scaledAmount;
         buyers[_msgSender].depositBUSD = amount;
         buyers[_msgSender].boughtTime = block.timestamp;
         buyers[_msgSender].numberOfTokens = scaledAmount;
 
-        busdAddress.transferFrom(_msgSender, address(this), amount);
+        busdAddress.transfer(address(this), amount);
 
         emit Sold(_msgSender, scaledAmount);
     }
@@ -143,17 +144,17 @@ contract NTokenSale {
         uint256 unlockToBalance;
         if (!buyers[_msgSender].NarfexPayied) {
             // Unlock tokens after 60 days for buyers 
-            require (block.timestamp - buyers[_msgSender].boughtTime >= 60 days); //
+            require (block.timestamp - buyers[_msgSender].boughtTime >= 60 seconds); //
 
             buyers[_msgSender].NarfexPayied = true;
             // sub 60 days and from this point unlocking 10% every 120 days 
-            buyers[_msgSender].boughtTime -= 60 days; 
-            unlockToBalance = buyers[_msgSender].depositBUSD / getUSDPrice(NarfexAddress);
+            buyers[_msgSender].boughtTime -= 60 seconds; 
+            unlockToBalance = buyers[_msgSender].depositBUSD * WAD / getUSDPrice(NarfexAddress);
             buyers[_msgSender].depositBUSD = 0;
     
         } else {
             // Unlock 10% tokens after 120 days for buyers
-            require (block.timestamp - buyers[_msgSender].boughtTime >= 120 days);
+            require (block.timestamp - buyers[_msgSender].boughtTime >= 120 seconds);
             buyers[_msgSender].boughtTime = block.timestamp;
 
             // calculating 10% for user
@@ -177,9 +178,9 @@ contract NTokenSale {
         require(block.timestamp >= timeEndSale, "Sorry, sale has not ended yet");
 
         // Send unsold tokens to the owner
-        tokenContract.transfer(_msgSender, tokenContract.balanceOf(address(this)));
+        //tokenContract.transfer(_msgSender, tokenContract.balanceOf(address(this)));
         // Send BUSD tokens to the owner
-        busdAddress.transfer(_msgSender, busdAddress.balanceOf(address(this)));
+        //busdAddress.transfer(_msgSender, busdAddress.balanceOf(address(this)));
     }
 
     // check allowance for user to buy in private sale
@@ -221,4 +222,7 @@ contract NTokenSale {
         }
     }
 
+    function getBalanceBUSD() public returns(uint256){
+        return busdAddress.balanceOf(address(this));
+    }
 }
