@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
-// uising PancakeFactory to get price of Narfex in BUSD
+// using PancakeFactory to get price of Narfex in BUSD
 abstract contract PancakeFactory {
     function getPair(address _token0, address _token1) external view virtual returns (address pairAddress);
 }
@@ -20,12 +20,10 @@ interface IBEP20 {
 }
 
 
-
-// whitelst users buy Narfex token for BUSD
-// after 60 days, they have the right to unlock tokens for the amount equivalent to the deposit in BUSD
-// every 120 days after unlocking from the previous item
-// users receive 10 percent of the remaining locked amount of Narfex 
+/// @title Private sale contract for Narfex token in BUSD price
 /// @author Viktor Potemkin
+/// @notice After 60 days from the date of purchase, users can unlock tokens for the amount equivalent to the deposit in BUSD
+/// @notice every 120 days after unlocking from the previous item, users receive 10 percent of the remaining locked amount of Narfex 
 
 contract NTokenSale {
 
@@ -83,7 +81,7 @@ contract NTokenSale {
         buyers[owner].whitelisted = true;
     }
 
-    // verification of private purchase authorization
+    /// @notice verification of private purchase authorization
     modifier onlyWhitelisted() {
         require(isWhitelisted(msg.sender), "You are not in whitelist");
         _;
@@ -106,8 +104,14 @@ contract NTokenSale {
         return a / b;
     }
 
+<<<<<<< HEAD
     // users buy locked tokens by transferring BUSD to this contract 
     function buyTokens(uint256 amount) public onlyWhitelisted {
+=======
+    /// @notice users buy locked tokens by transferring BUSD to this contract 
+    /// @param amount Amount of BUSD tokens to deposit
+    function buyTokens(uint256 amount) public onlyWhitelisted(){
+>>>>>>> 553f7ee33d1f47491d90328ed6772415fb8faff3
         address _msgSender = msg.sender; 
 
         require(block.timestamp - timeStartSale < timeEndSale, "Sorry, sale already end");
@@ -126,7 +130,8 @@ contract NTokenSale {
         emit Sold(_msgSender, scaledAmount);
     }
 
-    // withdraw unlocked tokens
+    /// @notice allows users to withdraw unlocked tokens
+    /// @param _numberOfTokens amount of Narfex tokens to withdraw
     function withdraw(uint256 _numberOfTokens) public onlyWhitelisted() {
         address _msgSender = msg.sender; // lower gas
 
@@ -138,7 +143,7 @@ contract NTokenSale {
         emit Withdraw (_msgSender, _numberOfTokens);
     }
 
-    // allows users to unlock tokens after a certain period of time
+    /// @notice allows users to unlock tokens after a certain period of time
     function unlock() public onlyWhitelisted {
         address _msgSender = msg.sender;
         uint256 unlockToBalance;
@@ -171,7 +176,7 @@ contract NTokenSale {
         emit UnlockTokensToBuyers(_msgSender, unlockToBalance);
     }
 
-    // Send unsold tokens and BUST tokens to the owner
+    /// @notice send from this contract unsold tokens and deposited BUSD tokens to the owner
     function endSale() public {
         address _msgSender = msg.sender;
         require(_msgSender == owner);
@@ -183,12 +188,14 @@ contract NTokenSale {
         //busdAddress.transfer(_msgSender, busdAddress.balanceOf(address(this)));
     }
 
-    // check allowance for user to buy in private sale
+    /// @notice check allowance for user to buy in private sale
+    /// @param _address address of user for check allowance
     function isWhitelisted(address _address) public view returns(bool) {
         return buyers[_address].whitelisted;
     }
 
-    // Allow user to buy in private sale (add to whitelist)
+    /// @notice add to whitelist user
+    /// @param _address address of user for add to whitelist
     function addWhitelist(address _address) public {
         require(msg.sender == owner);
 
@@ -196,13 +203,19 @@ contract NTokenSale {
         emit AddedToWhitelist(_address);
     }
 
-    // Returns pair address from PancakeFactory
+    /// @notice get pair address of Narfex token and BUSD
+    /// @param _token0 the address of Narfex
+    /// @param _token1 the address of BUSD
+    /// @return address of pair tokens from Pancake factory
     function getPair(address _token0, address _token1) public view returns (address pairAddress) {
         PancakeFactory factory = PancakeFactory(factoryAddress);
         return factory.getPair(_token0, _token1);
     }
 
-    // Returns ratio in a decimal number with 18 digits of precision
+    /// @notice get ratio for pair from Pancake
+    /// @param _token0 the address of Narfex
+    /// @param _token1 the address of BUSD
+    /// @return returns ratio in a decimal number with 18 digits of precision
     function getRatio(address _token0, address _token1) public view returns (uint) {
         PancakePair pair = PancakePair(getPair(_token0, _token1));
         (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = pair.getReserves();
@@ -213,7 +226,9 @@ contract NTokenSale {
         }
     }
 
-    // Returns token USD price in a decimal number with 18 digits of precision
+    /// @notice get price of token in BUSD from Pancake pair
+    /// @param _token the address of Narfex (address of toren for price in BUSD)
+    /// @return returns token BUSD price in a decimal number with 18 digits of precision
     function getUSDPrice(address _token) public view returns (uint) {
         if (_token == BUSD) {
             return WAD;
@@ -222,7 +237,11 @@ contract NTokenSale {
         }
     }
 
+<<<<<<< HEAD
     function getBalanceBUSD() public returns(uint256){
         return busdAddress.balanceOf(address(this));
     }
 }
+=======
+}
+>>>>>>> 553f7ee33d1f47491d90328ed6772415fb8faff3
