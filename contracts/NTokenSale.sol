@@ -16,6 +16,7 @@ interface IBEP20 {
     function transfer(address recipient, uint256 amount) external returns (bool);
     function balanceOf(address account) external view returns (uint256);
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    function approve(address spender, uint256 amount) external returns (bool);
 }
 
 /// @title Private sale contract for Narfex token in BUSD price
@@ -32,7 +33,7 @@ contract NTokenSale {
         uint256 boughtTime; // time point when user bought token in private sale
         uint256 availableBalance; // token balance to spend
         bool NarfexPayied; // payed numberOfTokens = depositBUSD.mul(priceNarfex) after 60 days
-        bool whitelisted; // added to whitelist
+        // bool whitelisted; // added to whitelist
         bool bougt; // point when user bought locked tokens
     }
 
@@ -74,35 +75,18 @@ contract NTokenSale {
         pairAddress = _pairAddress;
         timeStartSale = block.timestamp;
         owner = msg.sender;
-        buyers[owner].whitelisted = true;
+        //buyers[owner].whitelisted = true;
     }
 
     /// @notice verification of private purchase authorization
-    modifier onlyWhitelisted() {
-        require(isWhitelisted(msg.sender), "You are not in whitelist");
-        _;
-    }
-
-    //Guards against integer overflows
-    function safeMul(uint256 a, uint256 b) internal pure returns (uint256) {
-        if (a == 0) {
-            return 0;
-        } else {
-            uint256 c = a * b;
-            assert(c / a == b);
-            return c;
-        }
-    }
-
-    // Guards for div
-    function safeDiv(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b > 0, "SafeMath: division by zero");
-        return a / b;
-    }
+    // modifier onlyWhitelisted() {
+    //     require(isWhitelisted(msg.sender), "You are not in whitelist");
+    //     _;
+    // }
 
     /// @notice users buy locked tokens by transferring BUSD to this contract 
     /// @param amount Amount of BUSD tokens to deposit
-    function buyTokens(uint256 amount) public  onlyWhitelisted {
+    function buyTokens(uint256 amount) public{//  onlyWhitelisted {
 
         address _msgSender = msg.sender; 
 
@@ -111,7 +95,6 @@ contract NTokenSale {
         amount = amount * WAD;
         saleSupply = saleSupply * WAD;
         uint256 scaledAmount = amount * 10 / 4;
-        console.log("scaledAmount", scaledAmount);
         require(scaledAmount <= saleSupply, "You can not buy more than maximum supply");
         require(tokenContract.balanceOf(address(this)) >= scaledAmount);
         saleSupply = saleSupply - scaledAmount;
@@ -127,7 +110,7 @@ contract NTokenSale {
 
     /// @notice allows users to withdraw unlocked tokens
     /// @param _numberOfTokens amount of Narfex tokens to withdraw
-    function withdraw(uint256 _numberOfTokens) public onlyWhitelisted {
+    function withdraw(uint256 _numberOfTokens) public{ // onlyWhitelisted {
         address _msgSender = msg.sender; // lower gas
 
         require (buyers[_msgSender].availableBalance >= _numberOfTokens, "Not enough tokens to withdraw");
@@ -139,22 +122,22 @@ contract NTokenSale {
     }
 
     /// @notice allows users to unlock tokens after a certain period of time
-    function unlock() public onlyWhitelisted {
+    function unlock() public{// onlyWhitelisted {
         address _msgSender = msg.sender;
         uint256 unlockToBalance;
         if (!buyers[_msgSender].NarfexPayied) {
             // Unlock tokens after 60 days for buyers 
-            require (block.timestamp - buyers[_msgSender].boughtTime >= 60 seconds); //
+            require (block.timestamp - buyers[_msgSender].boughtTime >= 60 minutes); //
 
             buyers[_msgSender].NarfexPayied = true;
             // sub 60 days and from this point unlocking 10% every 120 days 
-            buyers[_msgSender].boughtTime -= 60 seconds; 
+            buyers[_msgSender].boughtTime -= 60 minutes; 
             unlockToBalance = buyers[_msgSender].depositBUSD * WAD / getUSDPrice(NarfexAddress);
             buyers[_msgSender].depositBUSD = 0;
     
         } else {
             // Unlock 10% tokens after 120 days for buyers
-            require (block.timestamp - buyers[_msgSender].boughtTime >= 120 seconds);
+            require (block.timestamp - buyers[_msgSender].boughtTime >= 120 minutes);
             buyers[_msgSender].boughtTime = block.timestamp;
 
             // calculating 10% for user
@@ -185,18 +168,18 @@ contract NTokenSale {
 
     /// @notice check allowance for user to buy in private sale
     /// @param _address address of user for check allowance
-    function isWhitelisted(address _address) public view returns(bool) {
-        return buyers[_address].whitelisted;
-    }
+    // function isWhitelisted(address _address) public view returns(bool) {
+    //     return buyers[_address].whitelisted;
+    // }
 
     /// @notice add to whitelist user
     /// @param _address address of user for add to whitelist
-    function addWhitelist(address _address) public {
-        require(msg.sender == owner);
+    // function addWhitelist(address _address) public {
+    //     require(msg.sender == owner);
 
-        buyers[_address].whitelisted = true;
-        emit AddedToWhitelist(_address);
-    }
+    //     buyers[_address].whitelisted = true;
+    //     emit AddedToWhitelist(_address);
+    // }
 
 
     /// @notice get ratio for pair from Pancake
@@ -224,19 +207,15 @@ contract NTokenSale {
         }
     }
 
+    /// @notice get amount of BUSD in this contract
+    /// @return returns amount of BUSD in this contract
     function getBalanceBUSD() public view returns(uint256){
         return busdAddress.balanceOf(address(this));
     }
 
+    /// @notice get amount of Narfex in this contract
+    /// @return returns amount of Narfex in this contract
     function getBalanceNarfex() public view returns(uint256){
         return tokenContract.balanceOf(address(this));
-    }
-
-    function getYourBalanceBUSD() public view returns(uint256){
-        return busdAddress.balanceOf(msg.sender);
-    }
-
-    function getYourBalanceNarfex() public view returns(uint256){
-        return tokenContract.balanceOf(msg.sender);
     }
 }
