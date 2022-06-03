@@ -102,7 +102,11 @@ contract NTokenSale {
 
     /// @notice users buy locked tokens by transferring BUSD to this contract 
     /// @param amount Amount of BUSD tokens to deposit
+<<<<<<< HEAD
     function buyTokens(uint256 amount) public  onlyWhitelisted {
+=======
+    function buyTokens(uint256 amount) public onlyWhitelisted(){
+>>>>>>> 2b0c7161e886e320e078e7e91ca01158b910be2e
         address _msgSender = msg.sender; 
 
         require(!buyers[_msgSender].bougt);
@@ -223,7 +227,11 @@ contract NTokenSale {
         }
     }
 
+<<<<<<< HEAD
     function getBalanceBUSD() public view returns(uint256){
+=======
+    function getBalanceBUSD() public returns(uint256){
+>>>>>>> 2b0c7161e886e320e078e7e91ca01158b910be2e
         return busdAddress.balanceOf(address(this));
     }
 
@@ -240,3 +248,7 @@ contract NTokenSale {
     }
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2b0c7161e886e320e078e7e91ca01158b910be2e
