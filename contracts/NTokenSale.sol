@@ -1,24 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
+import "hardhat/console.sol";
+
 // using PancakeFactory to get price of Narfex in BUSD
-abstract contract PancakeFactory {
-    function getPair(address _token0, address _token1) external view virtual returns (address pairAddress);
+interface PancakeFactory {
+    function getPair(address _token0, address _token1) external view returns (address pairAddress);
 }
 
-abstract contract PancakePair {
-    address public token0;
-    address public token1;
-    function getReserves() public view virtual returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast);
+interface PancakePair {
+    function getReserves() external view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast);
 }
 
 interface IBEP20 {
-    function balanceOf(address _owner) external returns (uint256);
-    function transfer(address _to, uint256 _amount) external returns (bool);
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function decimals() external view returns (uint256);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+    function balanceOf(address account) external view returns (uint256);
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 }
-
 
 /// @title Private sale contract for Narfex token in BUSD price
 /// @author Viktor Potemkin
@@ -35,6 +33,7 @@ contract NTokenSale {
         uint256 availableBalance; // token balance to spend
         bool NarfexPayied; // payed numberOfTokens = depositBUSD.mul(priceNarfex) after 60 days
         bool whitelisted; // added to whitelist
+        bool bougt; // point when user bought locked tokens
     }
 
     mapping (address => Buyer) public buyers; 
@@ -45,10 +44,9 @@ contract NTokenSale {
     uint256 public saleSupply; // the number of tokens available for purchase 
     uint256 public timeStartSale; // starting sale point
     uint256 public timeEndSale; // Ending of private sale for whitelist in seconds
-    uint256 public firstNarfexPrice; // price of tokens in private sale 
 
+    address public pairAddress; // pair Narfex -> BUSD in PancakeSwap
     address public NarfexAddress; // Narfex address for BUSD price
-    address public factoryAddress; // PancakeFactory for pairs getting
     address public BUSD; // BUSD address in current network
     uint constant WAD = 10 ** 18; // Decimal number with 18 digits of precision
 
@@ -62,20 +60,18 @@ contract NTokenSale {
         IBEP20 _busdAddress,
         uint256 _saleSupply,
         uint256 _timeEndSale,
-        address _factory, //0x043C37847dEE7f0657C45f4b7379DeE320aD9F18
         address _BUSD,
-        address _NarfexAddress, //0xcDA8eD22bB27Fe84615f368D09B5A8Afe4a99320
-        uint256 _firstNarfexPrice
+        address _NarfexAddress, 
+        address _pairAddress
         ) {
         
         tokenContract = _tokenContract;
         busdAddress = _busdAddress;
         saleSupply = _saleSupply;
         timeEndSale = _timeEndSale;
-        factoryAddress = _factory;
         BUSD = _BUSD;
         NarfexAddress = _NarfexAddress;
-        firstNarfexPrice = _firstNarfexPrice;
+        pairAddress = _pairAddress;
         timeStartSale = block.timestamp;
         owner = msg.sender;
         buyers[owner].whitelisted = true;
@@ -104,35 +100,33 @@ contract NTokenSale {
         return a / b;
     }
 
-<<<<<<< HEAD
-    // users buy locked tokens by transferring BUSD to this contract 
-    function buyTokens(uint256 amount) public onlyWhitelisted {
-=======
     /// @notice users buy locked tokens by transferring BUSD to this contract 
     /// @param amount Amount of BUSD tokens to deposit
-    function buyTokens(uint256 amount) public onlyWhitelisted(){
->>>>>>> 553f7ee33d1f47491d90328ed6772415fb8faff3
+    function buyTokens(uint256 amount) public  onlyWhitelisted {
         address _msgSender = msg.sender; 
 
+        require(!buyers[_msgSender].bougt);
         require(block.timestamp - timeStartSale < timeEndSale, "Sorry, sale already end");
-        
-        uint256 scaledAmount = amount * WAD * 10 / 4;
-
-        require(scaledAmount <= (saleSupply * WAD), "You can not buy more than maximum supply");
-        //require(tokenContract.balanceOf(address(this)) >= scaledAmount);
-        saleSupply = saleSupply * WAD - scaledAmount;
+        amount = amount * WAD;
+        saleSupply = saleSupply * WAD;
+        uint256 scaledAmount = amount * 10 / 4;
+        console.log("scaledAmount", scaledAmount);
+        require(scaledAmount <= saleSupply, "You can not buy more than maximum supply");
+        require(tokenContract.balanceOf(address(this)) >= scaledAmount);
+        saleSupply = saleSupply - scaledAmount;
         buyers[_msgSender].depositBUSD = amount;
         buyers[_msgSender].boughtTime = block.timestamp;
+        buyers[_msgSender].bougt = true;
         buyers[_msgSender].numberOfTokens = scaledAmount;
-
-        busdAddress.transfer(address(this), amount);
+        
+        busdAddress.transferFrom(_msgSender, address(this), amount);
 
         emit Sold(_msgSender, scaledAmount);
     }
 
     /// @notice allows users to withdraw unlocked tokens
     /// @param _numberOfTokens amount of Narfex tokens to withdraw
-    function withdraw(uint256 _numberOfTokens) public onlyWhitelisted() {
+    function withdraw(uint256 _numberOfTokens) public onlyWhitelisted {
         address _msgSender = msg.sender; // lower gas
 
         require (buyers[_msgSender].availableBalance >= _numberOfTokens, "Not enough tokens to withdraw");
@@ -180,12 +174,12 @@ contract NTokenSale {
     function endSale() public {
         address _msgSender = msg.sender;
         require(_msgSender == owner);
-        require(block.timestamp >= timeEndSale, "Sorry, sale has not ended yet");
+        require(block.timestamp - timeStartSale >= timeEndSale, "Sorry, sale has not ended yet");
 
         // Send unsold tokens to the owner
-        //tokenContract.transfer(_msgSender, tokenContract.balanceOf(address(this)));
+        tokenContract.transfer(_msgSender, tokenContract.balanceOf(address(this)));
         // Send BUSD tokens to the owner
-        //busdAddress.transfer(_msgSender, busdAddress.balanceOf(address(this)));
+        busdAddress.transfer(_msgSender, busdAddress.balanceOf(address(this)));
     }
 
     /// @notice check allowance for user to buy in private sale
@@ -203,23 +197,15 @@ contract NTokenSale {
         emit AddedToWhitelist(_address);
     }
 
-    /// @notice get pair address of Narfex token and BUSD
-    /// @param _token0 the address of Narfex
-    /// @param _token1 the address of BUSD
-    /// @return address of pair tokens from Pancake factory
-    function getPair(address _token0, address _token1) public view returns (address pairAddress) {
-        PancakeFactory factory = PancakeFactory(factoryAddress);
-        return factory.getPair(_token0, _token1);
-    }
 
     /// @notice get ratio for pair from Pancake
     /// @param _token0 the address of Narfex
     /// @param _token1 the address of BUSD
     /// @return returns ratio in a decimal number with 18 digits of precision
     function getRatio(address _token0, address _token1) public view returns (uint) {
-        PancakePair pair = PancakePair(getPair(_token0, _token1));
+        PancakePair pair = PancakePair(pairAddress);
         (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = pair.getReserves();
-        if (pair.token0() == _token0) {
+        if (NarfexAddress == _token0) {
             return reserve1 * WAD / reserve0;
         } else {
             return reserve0 * WAD / reserve1;
@@ -237,11 +223,20 @@ contract NTokenSale {
         }
     }
 
-<<<<<<< HEAD
-    function getBalanceBUSD() public returns(uint256){
+    function getBalanceBUSD() public view returns(uint256){
         return busdAddress.balanceOf(address(this));
     }
+
+    function getBalanceNarfex() public view returns(uint256){
+        return tokenContract.balanceOf(address(this));
+    }
+
+    function getYourBalanceBUSD() public view returns(uint256){
+        return busdAddress.balanceOf(msg.sender);
+    }
+
+    function getYourBalanceNarfex() public view returns(uint256){
+        return tokenContract.balanceOf(msg.sender);
+    }
 }
-=======
-}
->>>>>>> 553f7ee33d1f47491d90328ed6772415fb8faff3
+
