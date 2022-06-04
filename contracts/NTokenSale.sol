@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
-import "hardhat/console.sol";
-
 // using PancakeFactory to get price of Narfex in BUSD
 interface PancakeFactory {
     function getPair(address _token0, address _token1) external view returns (address pairAddress);
@@ -16,7 +14,6 @@ interface IBEP20 {
     function transfer(address recipient, uint256 amount) external returns (bool);
     function balanceOf(address account) external view returns (uint256);
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-    function approve(address spender, uint256 amount) external returns (bool);
 }
 
 /// @title Private sale contract for Narfex token in BUSD price
@@ -53,7 +50,7 @@ contract NTokenSale {
 
     event Sold(address buyer, uint256 amount);
     event UnlockTokensToBuyers(address buyer, uint256 amount); //after 60 days
-    event AddedToWhitelist(address buyer);
+    //event AddedToWhitelist(address buyer);
     event Withdraw(address buyer, uint256 amount);
 
     constructor (
@@ -85,14 +82,13 @@ contract NTokenSale {
     // }
 
     /// @notice users buy locked tokens by transferring BUSD to this contract 
-    /// @param amount Amount of BUSD tokens to deposit
+    /// @param amount Amount of BUSD tokens to deposit in wei (10**18)
     function buyTokens(uint256 amount) public{//  onlyWhitelisted {
 
         address _msgSender = msg.sender; 
 
-        require(!buyers[_msgSender].bougt);
+        require(!buyers[_msgSender].bougt, "You can buy once");
         require(block.timestamp - timeStartSale < timeEndSale, "Sorry, sale already end");
-        amount = amount * WAD;
         saleSupply = saleSupply * WAD;
         uint256 scaledAmount = amount * 10 / 4;
         require(scaledAmount <= saleSupply, "You can not buy more than maximum supply");
