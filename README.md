@@ -6,7 +6,7 @@
     function addWhitelist(address _address)
 ```
    In this case, `address` is address of user, whose allowed to buy tokens.
-    
+    P.S. in testnet version you have not be in whitelist to buy
 On successful execution of the function, event is generated
 `AddedToWhitelist(_address)`
    
