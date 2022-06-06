@@ -95,9 +95,11 @@ contract NTokenSale {
     }
 
     /// @notice starting sale with pairAddress of Narfex-BUSD in PancakeSwap
-    function startSale() public onlyOwner {
+    function startSale(uint256 _timeEndSale) public onlyOwner {
+        //require(!saleStarted);
         timeStartSale = block.timestamp;
         saleStarted = true;
+        timeEndSale = _timeEndSale;
         saleSupply = saleSupply * WAD;
         minAmountForUser = minAmountForUser * WAD;
         maxAmountForUser = maxAmountForUser * WAD;
@@ -105,8 +107,7 @@ contract NTokenSale {
 
     /// @notice change pairAddress
     /// @param _pairAddress address of Narfex-BUSD in PancakeSwap
-    function changePairAddress(address _pairAddress) public {
-        require(msg.sender == owner);
+    function changePairAddress(address _pairAddress) public onlyOwner {
         pairAddress = _pairAddress;
     }
 
@@ -147,9 +148,10 @@ contract NTokenSale {
     function unlock() public onlyWhitelisted {
         address _msgSender = msg.sender;
         uint256 unlockToBalance;
+        require(block.timestamp - timeStartSale > timeEndSale);
         if (!buyers[_msgSender].NarfexPayied) {
             // Unlock tokens after 60 days for buyers 
-            require (block.timestamp - timeEndSale >= 60 days); 
+            require (block.timestamp - timeStartSale >= timeEndSale + 2 minutes); 
             buyers[_msgSender].NarfexPayied = true;
             buyers[_msgSender].unlocktTime = block.timestamp;
             unlockToBalance = buyers[_msgSender].depositBUSD * WAD / getUSDPrice(NarfexAddress);
@@ -157,7 +159,7 @@ contract NTokenSale {
     
         } else {
             // Unlock 10% tokens after 120 days for buyers
-            require (block.timestamp - buyers[_msgSender].unlocktTime >= 120 days);
+            require (block.timestamp - buyers[_msgSender].unlocktTime >= 2 minutes);
             buyers[_msgSender].unlocktTime = block.timestamp;
             // calculating 10% for user
             unlockToBalance =  (buyers[_msgSender].numberOfTokens * 100) / 1000;
