@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
+import "hardhat/console.sol";
+
 // using PancakeFactory to get price of Narfex in BUSD
 interface PancakeFactory {
     function getPair(address _token0, address _token1) external view returns (address pairAddress);
@@ -27,11 +29,10 @@ contract NTokenSale {
     struct Buyer{
         uint256 numberOfTokens; // locked tokens
         uint256 depositBUSD; // deposit for buy tokens in private sale
-        uint256 boughtTime; // time point when user bought token in private sale
+        uint256 unlocktTime; // time point when user unlock tokens
         uint256 availableBalance; // token balance to spend
         bool NarfexPayied; // payed numberOfTokens = depositBUSD.mul(priceNarfex) after 60 days
-        // bool whitelisted; // added to whitelist
-        bool bougt; // point when user bought locked tokens
+        bool whitelisted; // added to whitelist
     }
 
     mapping (address => Buyer) public buyers; 
@@ -42,6 +43,9 @@ contract NTokenSale {
     uint256 public saleSupply; // the number of tokens available for purchase 
     uint256 public timeStartSale; // starting sale point
     uint256 public timeEndSale; // Ending of private sale for whitelist in seconds
+    uint256 public minAmountForUser; // minimum amount of deposit to buy in busd for each user
+    uint256 public maxAmountForUser; // maximum amount of deposit for sale in busd for each user
+    bool public saleStarted; // from this point sale is started
 
     address public pairAddress; // pair Narfex -> BUSD in PancakeSwap
     address public NarfexAddress; // Narfex address for BUSD price
@@ -50,7 +54,7 @@ contract NTokenSale {
 
     event Sold(address buyer, uint256 amount);
     event UnlockTokensToBuyers(address buyer, uint256 amount); //after 60 days
-    //event AddedToWhitelist(address buyer);
+    event AddedToWhitelist(address buyer);
     event Withdraw(address buyer, uint256 amount);
 
     constructor (
@@ -60,7 +64,9 @@ contract NTokenSale {
         uint256 _timeEndSale,
         address _BUSD,
         address _NarfexAddress, 
-        address _pairAddress
+        address _pairAddress,
+        uint256 _minAmountForUser,
+        uint256 _maxAmountForUser
         ) {
         
         tokenContract = _tokenContract;
@@ -70,33 +76,53 @@ contract NTokenSale {
         BUSD = _BUSD;
         NarfexAddress = _NarfexAddress;
         pairAddress = _pairAddress;
-        timeStartSale = block.timestamp;
+        minAmountForUser = _minAmountForUser;
+        maxAmountForUser = _maxAmountForUser;
         owner = msg.sender;
-        //buyers[owner].whitelisted = true;
+        buyers[owner].whitelisted = true;
     }
 
     /// @notice verification of private purchase authorization
-    // modifier onlyWhitelisted() {
-    //     require(isWhitelisted(msg.sender), "You are not in whitelist");
-    //     _;
-    // }
+    modifier onlyWhitelisted() {
+        require(isWhitelisted(msg.sender), "You are not in whitelist");
+        _;
+    }
+
+    /// @notice verification of owner
+    modifier onlyOwner() {
+        require(msg.sender == owner);
+        _;
+    }
+
+    /// @notice starting sale with pairAddress of Narfex-BUSD in PancakeSwap
+    function startSale() public onlyOwner {
+        timeStartSale = block.timestamp;
+        saleStarted = true;
+        saleSupply = saleSupply * WAD;
+        minAmountForUser = minAmountForUser * WAD;
+        maxAmountForUser = maxAmountForUser * WAD;
+    }
+
+    /// @notice change pairAddress
+    /// @param _pairAddress address of Narfex-BUSD in PancakeSwap
+    function changePairAddress(address _pairAddress) public {
+        require(msg.sender == owner);
+        pairAddress = _pairAddress;
+    }
 
     /// @notice users buy locked tokens by transferring BUSD to this contract 
     /// @param amount Amount of BUSD tokens to deposit in wei (10**18)
-    function buyTokens(uint256 amount) public{//  onlyWhitelisted {
-
+    function buyTokens(uint256 amount) public onlyWhitelisted {
         address _msgSender = msg.sender; 
 
-        require(!buyers[_msgSender].bougt, "You can buy once");
+        require(saleStarted, "Sorry, sale not started");
         require(block.timestamp - timeStartSale < timeEndSale, "Sorry, sale already end");
-        saleSupply = saleSupply * WAD;
+        require(amount >= minAmountForUser, "You must deposit more than 30 thousand BUSD");
+        require(amount <= maxAmountForUser - buyers[_msgSender].depositBUSD, "You have exceeded the purchase limit BUSD");
         uint256 scaledAmount = amount * 10 / 4;
         require(scaledAmount <= saleSupply, "You can not buy more than maximum supply");
-        require(tokenContract.balanceOf(address(this)) >= scaledAmount);
         saleSupply = saleSupply - scaledAmount;
         buyers[_msgSender].depositBUSD = amount;
-        buyers[_msgSender].boughtTime = block.timestamp;
-        buyers[_msgSender].bougt = true;
         buyers[_msgSender].numberOfTokens = scaledAmount;
         
         busdAddress.transferFrom(_msgSender, address(this), amount);
@@ -106,7 +132,7 @@ contract NTokenSale {
 
     /// @notice allows users to withdraw unlocked tokens
     /// @param _numberOfTokens amount of Narfex tokens to withdraw
-    function withdraw(uint256 _numberOfTokens) public{ // onlyWhitelisted {
+    function withdraw(uint256 _numberOfTokens) public onlyWhitelisted {
         address _msgSender = msg.sender; // lower gas
 
         require (buyers[_msgSender].availableBalance >= _numberOfTokens, "Not enough tokens to withdraw");
@@ -118,27 +144,23 @@ contract NTokenSale {
     }
 
     /// @notice allows users to unlock tokens after a certain period of time
-    function unlock() public{// onlyWhitelisted {
+    function unlock() public onlyWhitelisted {
         address _msgSender = msg.sender;
         uint256 unlockToBalance;
         if (!buyers[_msgSender].NarfexPayied) {
             // Unlock tokens after 60 days for buyers 
-            require (block.timestamp - buyers[_msgSender].boughtTime >= 60 minutes); //
-
+            require (block.timestamp - timeEndSale >= 60 days); 
             buyers[_msgSender].NarfexPayied = true;
-            // sub 60 days and from this point unlocking 10% every 120 days 
-            buyers[_msgSender].boughtTime -= 60 minutes; 
+            buyers[_msgSender].unlocktTime = block.timestamp;
             unlockToBalance = buyers[_msgSender].depositBUSD * WAD / getUSDPrice(NarfexAddress);
             buyers[_msgSender].depositBUSD = 0;
     
         } else {
             // Unlock 10% tokens after 120 days for buyers
-            require (block.timestamp - buyers[_msgSender].boughtTime >= 120 minutes);
-            buyers[_msgSender].boughtTime = block.timestamp;
-
+            require (block.timestamp - buyers[_msgSender].unlocktTime >= 120 days);
+            buyers[_msgSender].unlocktTime = block.timestamp;
             // calculating 10% for user
             unlockToBalance =  (buyers[_msgSender].numberOfTokens * 100) / 1000;
-
         }
 
         if (buyers[_msgSender].numberOfTokens < unlockToBalance) {
@@ -151,32 +173,35 @@ contract NTokenSale {
     }
 
     /// @notice send from this contract unsold tokens and deposited BUSD tokens to the owner
-    function endSale() public {
-        address _msgSender = msg.sender;
-        require(_msgSender == owner);
+    function saleEnded() public onlyOwner{
         require(block.timestamp - timeStartSale >= timeEndSale, "Sorry, sale has not ended yet");
-
         // Send unsold tokens to the owner
-        tokenContract.transfer(_msgSender, tokenContract.balanceOf(address(this)));
+        tokenContract.transfer(owner, saleSupply);
         // Send BUSD tokens to the owner
-        busdAddress.transfer(_msgSender, busdAddress.balanceOf(address(this)));
+        busdAddress.transfer(owner, busdAddress.balanceOf(address(this)));
     }
 
     /// @notice check allowance for user to buy in private sale
     /// @param _address address of user for check allowance
-    // function isWhitelisted(address _address) public view returns(bool) {
-    //     return buyers[_address].whitelisted;
-    // }
+    function isWhitelisted(address _address) public view returns(bool) {
+        return buyers[_address].whitelisted;
+    }
 
     /// @notice add to whitelist user
     /// @param _address address of user for add to whitelist
-    // function addWhitelist(address _address) public {
-    //     require(msg.sender == owner);
+    function addWhitelist(address _address) public onlyOwner{
+        buyers[_address].whitelisted = true;
+        emit AddedToWhitelist(_address);
+    }
 
-    //     buyers[_address].whitelisted = true;
-    //     emit AddedToWhitelist(_address);
-    // }
-
+    /// @notice changes owner address for adding in whitelist users
+    /// @param _address the address of new owner
+    /// @return returns address of new owner
+    function changeOwner(address _address) public onlyOwner returns(address){
+        owner = _address;
+        addWhitelist(_address);
+        return owner;
+    }
 
     /// @notice get ratio for pair from Pancake
     /// @param _token0 the address of Narfex
