@@ -46,6 +46,9 @@ contract NTokenSale {
     uint256 public minAmountForUser; // minimum amount of deposit to buy in busd for each user
     uint256 public maxAmountForUser; // maximum amount of deposit for sale in busd for each user
     bool public saleStarted; // from this point sale is started
+    uint256 public firstUnlock;// period of time for unlock 100% BUSD price
+    uint256 public percantageUnlock;// period of time to unlock 10% of locked Narfex
+    uint256 public firstNarfexPrice;// price of Narfex to buy locked tokens
 
     address public pairAddress; // pair Narfex -> BUSD in PancakeSwap
     address public NarfexAddress; // Narfex address for BUSD price
@@ -61,7 +64,6 @@ contract NTokenSale {
         IBEP20  _tokenContract, 
         IBEP20 _busdAddress,
         uint256 _saleSupply,
-        uint256 _timeEndSale,
         address _BUSD,
         address _NarfexAddress, 
         address _pairAddress,
@@ -71,13 +73,12 @@ contract NTokenSale {
         
         tokenContract = _tokenContract;
         busdAddress = _busdAddress;
-        saleSupply = _saleSupply;
-        timeEndSale = _timeEndSale;
+        saleSupply = _saleSupply * WAD;
         BUSD = _BUSD;
         NarfexAddress = _NarfexAddress;
         pairAddress = _pairAddress;
-        minAmountForUser = _minAmountForUser;
-        maxAmountForUser = _maxAmountForUser;
+        minAmountForUser = _minAmountForUser * WAD;
+        maxAmountForUser = _maxAmountForUser * WAD;
         owner = msg.sender;
         buyers[owner].whitelisted = true;
     }
@@ -96,19 +97,9 @@ contract NTokenSale {
 
     /// @notice starting sale with pairAddress of Narfex-BUSD in PancakeSwap
     function startSale(uint256 _timeEndSale) public onlyOwner {
-        //require(!saleStarted);
         timeStartSale = block.timestamp;
         saleStarted = true;
         timeEndSale = _timeEndSale;
-        saleSupply = saleSupply * WAD;
-        minAmountForUser = minAmountForUser * WAD;
-        maxAmountForUser = maxAmountForUser * WAD;
-    }
-
-    /// @notice change pairAddress
-    /// @param _pairAddress address of Narfex-BUSD in PancakeSwap
-    function changePairAddress(address _pairAddress) public onlyOwner {
-        pairAddress = _pairAddress;
     }
 
     /// @notice users buy locked tokens by transferring BUSD to this contract 
@@ -120,14 +111,13 @@ contract NTokenSale {
         require(block.timestamp - timeStartSale < timeEndSale, "Sorry, sale already end");
         require(amount >= minAmountForUser, "You must deposit more than 30 thousand BUSD");
         require(amount <= maxAmountForUser - buyers[_msgSender].depositBUSD, "You have exceeded the purchase limit BUSD");
-        uint256 scaledAmount = amount * 10 / 4;
+        uint256 scaledAmount = amount * WAD / firstNarfexPrice;
         require(scaledAmount <= saleSupply, "You can not buy more than maximum supply");
         saleSupply = saleSupply - scaledAmount;
         buyers[_msgSender].depositBUSD = amount;
         buyers[_msgSender].numberOfTokens = scaledAmount;
         
         busdAddress.transferFrom(_msgSender, address(this), amount);
-
         emit Sold(_msgSender, scaledAmount);
     }
 
@@ -151,16 +141,16 @@ contract NTokenSale {
         require(block.timestamp - timeStartSale > timeEndSale);
         if (!buyers[_msgSender].NarfexPayied) {
             // Unlock tokens after 60 days for buyers 
-            require (block.timestamp - timeStartSale >= timeEndSale + 2 minutes); 
+            require (block.timestamp - timeStartSale >= timeEndSale + firstUnlock); 
             buyers[_msgSender].NarfexPayied = true;
-            buyers[_msgSender].unlocktTime = block.timestamp;
+            buyers[_msgSender].unlocktTime = timeStartSale + timeEndSale + firstUnlock;
             unlockToBalance = buyers[_msgSender].depositBUSD * WAD / getUSDPrice(NarfexAddress);
             buyers[_msgSender].depositBUSD = 0;
     
         } else {
             // Unlock 10% tokens after 120 days for buyers
-            require (block.timestamp - buyers[_msgSender].unlocktTime >= 2 minutes);
-            buyers[_msgSender].unlocktTime = block.timestamp;
+            require (block.timestamp - buyers[_msgSender].unlocktTime >= percantageUnlock);
+            buyers[_msgSender].unlocktTime += percantageUnlock;
             // calculating 10% for user
             unlockToBalance =  (buyers[_msgSender].numberOfTokens * 100) / 1000;
         }
@@ -183,26 +173,11 @@ contract NTokenSale {
         busdAddress.transfer(owner, busdAddress.balanceOf(address(this)));
     }
 
-    /// @notice check allowance for user to buy in private sale
-    /// @param _address address of user for check allowance
-    function isWhitelisted(address _address) public view returns(bool) {
-        return buyers[_address].whitelisted;
-    }
-
     /// @notice add to whitelist user
     /// @param _address address of user for add to whitelist
     function addWhitelist(address _address) public onlyOwner{
         buyers[_address].whitelisted = true;
         emit AddedToWhitelist(_address);
-    }
-
-    /// @notice changes owner address for adding in whitelist users
-    /// @param _address the address of new owner
-    /// @return returns address of new owner
-    function changeOwner(address _address) public onlyOwner returns(address){
-        owner = _address;
-        addWhitelist(_address);
-        return owner;
     }
 
     /// @notice get ratio for pair from Pancake
@@ -240,5 +215,46 @@ contract NTokenSale {
     /// @return returns amount of Narfex in this contract
     function getBalanceNarfex() public view returns(uint256){
         return tokenContract.balanceOf(address(this));
+    }
+
+    /// @notice check allowance for user to buy in private sale
+    /// @param _address address of user for check allowance
+    function isWhitelisted(address _address) public view returns(bool) {
+        return buyers[_address].whitelisted;
+    }
+
+    /// @notice changes owner address for adding in whitelist users
+    /// @param _address the address of new owner
+    /// @return returns address of new owner
+    function changeOwner(address _address) public onlyOwner returns(address){
+        owner = _address;
+        return owner;
+    }
+
+    function setUnlockPeriod(uint256 _firstUnlock, uint256 _percantageUnlock) public onlyOwner{
+        firstUnlock = _firstUnlock;
+        percantageUnlock = _percantageUnlock;
+    }
+
+    function setFirstNarfexPrice(uint256 _firstNarfexPrice) public onlyOwner{
+        firstNarfexPrice = _firstNarfexPrice;
+    }
+
+    function setMinAmountForUser (uint256 _minAmountForUser) public onlyOwner{
+        minAmountForUser = _minAmountForUser * WAD;
+    }
+
+    function setMaxAmountForUser (uint256 _maxAmountForUser) public onlyOwner{
+        maxAmountForUser = _maxAmountForUser * WAD;
+    } 
+
+    function setSaleSupply(uint256 _saleSupply) public onlyOwner{
+        saleSupply = _saleSupply * WAD;
+    }
+
+    /// @notice change pairAddress
+    /// @param _pairAddress address of Narfex-BUSD in PancakeSwap
+    function changePairAddress(address _pairAddress) public onlyOwner {
+        pairAddress = _pairAddress;
     }
 }
