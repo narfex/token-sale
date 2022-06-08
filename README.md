@@ -1,7 +1,11 @@
 ## ***How to participate in the purchase `Narfex`***
-1. Sale starts when `owner` (deployer) deploy this smart contract in mainnet, you have `timeEndSale` in seconds to participate in the `token-sale`
+1. Sale starts when `owner` write in function `timeEndSale` in seconds:
+```solidity
+    function startSale(uint256 _timeEndSale)
+```
+ you have `timeEndSale` to participate in the `token-sale`
 
-2. To participate in the `token-sale`, you must be authorized to buy. To do this, the owner (deployer) of the contract must add him to the `whitelist`
+2. To participate in the `token-sale`, you must be authorized to buy. To do this, the owner of the contract must add your address to the `whitelist`
 ```solidity
     function addWhitelist(address _address)
 ```
@@ -11,16 +15,16 @@ On successful execution of the function, event is generated
 `AddedToWhitelist(_address)`
    
 
-3. Then you should deposit your BUSD tokens to buy Narfex by `firstNarfexPrice` - fixed price of Narfex
+3. Then you should deposit your BUSD tokens to buy Narfex by `firstNarfexPrice` - fixed price of Narfex in this sale
 ```solidity
    function buyTokens(uint256 amount)
 ```
-   `amount` it is your deposit in BUSD. Your tokens will be locked in this contract for period of time
+   `amount` it is your deposit in BUSD (in wei). Your tokens will be locked in this contract for period of time
    
 On successful execution of the function, event is generated
 `Sold(_msgSender, scaledAmount)`
    
-4. After 60 days from `boughtTime` you have allowance to unlock tokens for the amount equivalent to the deposit in BUSD. And every 120 days after unlocking from the previous item, you can receive 10 percent of the remaining locked amount of Narfex.
+4. After `firstUnlock` time from `timeEndSale` you have allowance to unlock tokens for the amount equivalent to the deposit in BUSD. And every `percantageUnlock` time after unlocking from the previous item, you can receive 10 percent of the remaining locked amount of Narfex.
 ```solidity
    function unlock()
 ```
@@ -45,3 +49,21 @@ On successful execution of the function, event is generated
    function getUSDPrice(address _token)
 ```
     In this case, `_token` is address of Narfex, in PancakeFactory.
+    
+## ***Variables in contract***
+
+`tokenContract`  // IBEP20 the token being sold
+`busdAddress` // IBEP20 payment token address
+`owner` // deployer of contract 
+`saleSupply` // the number of tokens available for purchase 
+`timeStartSale` // starting sale point
+`timeEndSale` // period of time in seconds for private sale for whitelist users
+`minAmountForUser` // minimum amount of deposit in busd to buy for each user
+`maxAmountForUser` // maximum amount of deposit in busd for each user
+`saleStarted` // from this point sale is started
+`firstUnlock` // period of time for unlock 100% BUSD price
+`percantageUnlock` // period of time to unlock 10% of locked Narfex
+`firstNarfexPrice` // price of Narfex to buy locked tokens
+`pairAddress` // pair Narfex -> BUSD in PancakeSwap
+`NarfexAddress` // Narfex address for BUSD price
+`BUSD` // BUSD address in current network
