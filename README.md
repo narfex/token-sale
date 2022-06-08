@@ -43,7 +43,7 @@ On successful execution of the function, event is generated
 
 ## ***For now you already know how to buy Narfex in private sale, Good luck***
 
-## ***To unlocking Narfex after 60 days***
+## ***To unlocking Narfex after `firstUnlock`***
 1. We using price in BUSD from `PancakeFactory`
 ```solidity
    function getUSDPrice(address _token)
