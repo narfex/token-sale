@@ -231,25 +231,36 @@ contract NTokenSale {
         return owner;
     }
 
+    /// @notice changes unlock period
+    /// @param _firstUnlock unlock period for 100% deposit busd
+    /// @param _percantageUnlock unlock period for 10% of locked balance
     function setUnlockPeriod(uint256 _firstUnlock, uint256 _percantageUnlock) public onlyOwner{
         firstUnlock = _firstUnlock;
         percantageUnlock = _percantageUnlock;
     }
 
+    /// @notice changes price of Narfex in buyTokens function
+    /// @param _firstNarfexPrice price of Narfex in buyTokens function
     function setFirstNarfexPrice(uint256 _firstNarfexPrice) public onlyOwner{
         firstNarfexPrice = _firstNarfexPrice;
     }
 
+    /// @notice changes amount of minimum deposit BUSD in buyTokens function
+    /// @param _minAmountForUser minimum deposit BUSD in buyTokens function
     function setMinAmountForUser (uint256 _minAmountForUser) public onlyOwner{
-        minAmountForUser = _minAmountForUser * WAD;
+        minAmountForUser = _minAmountForUser;
     }
 
+    /// @notice changes amount of maximum deposit BUSD in buyTokens function
+    /// @param _maxAmountForUser maximum deposit BUSD in buyTokens function
     function setMaxAmountForUser (uint256 _maxAmountForUser) public onlyOwner{
-        maxAmountForUser = _maxAmountForUser * WAD;
+        maxAmountForUser = _maxAmountForUser;
     } 
 
+    /// @notice changes maximum of Narfex token avilable to buy for all users in buyTokens function
+    /// @param _saleSupply maximum of Narfex token avilable to buy for all users in buyTokens function
     function setSaleSupply(uint256 _saleSupply) public onlyOwner{
-        saleSupply = _saleSupply * WAD;
+        saleSupply = _saleSupply;
     }
 
     /// @notice change pairAddress
