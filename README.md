@@ -52,18 +52,32 @@ On successful execution of the function, event is generated
     
 ## ***Variables in contract***
 
-`tokenContract`  // IBEP20 the token being sold
-`busdAddress` // IBEP20 payment token address
-`owner` // deployer of contract 
-`saleSupply` // the number of tokens available for purchase 
-`timeStartSale` // starting sale point
-`timeEndSale` // period of time in seconds for private sale for whitelist users
-`minAmountForUser` // minimum amount of deposit in busd to buy for each user
-`maxAmountForUser` // maximum amount of deposit in busd for each user
-`saleStarted` // from this point sale is started
-`firstUnlock` // period of time for unlock 100% BUSD price
-`percantageUnlock` // period of time to unlock 10% of locked Narfex
-`firstNarfexPrice` // price of Narfex to buy locked tokens
-`pairAddress` // pair Narfex -> BUSD in PancakeSwap
-`NarfexAddress` // Narfex address for BUSD price
-`BUSD` // BUSD address in current network
+`tokenContract`  // IBEP20 the token being sold //
+
+`busdAddress` // IBEP20 payment token address //
+
+`owner` // deployer of contract //
+
+`saleSupply` // the number of tokens available for purchase //
+
+`timeStartSale` // starting sale point //
+
+`timeEndSale` // period of time in seconds for private sale for whitelist users //
+
+`minAmountForUser` // minimum amount of deposit in busd to buy for each user //
+
+`maxAmountForUser` // maximum amount of deposit in busd for each user //
+
+`saleStarted` // from this point sale is started //
+
+`firstUnlock` // period of time for unlock 100% BUSD price //
+
+`percantageUnlock` // period of time to unlock 10% of locked Narfex //
+
+`firstNarfexPrice` // price of Narfex to buy locked tokens //
+
+`pairAddress` // pair Narfex -> BUSD in PancakeSwap //
+
+`NarfexAddress` // Narfex address for BUSD price //
+
+`BUSD` // BUSD address in current network //
