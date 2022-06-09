@@ -51,8 +51,6 @@ contract NTokenSale {
     uint256 public firstNarfexPrice;// price of Narfex to buy locked tokens
 
     address public pairAddress; // pair Narfex -> BUSD in PancakeSwap
-    address public NarfexAddress; // Narfex address for BUSD price
-    address public BUSD; // BUSD address in current network
     uint constant WAD = 10 ** 18; // Decimal number with 18 digits of precision
 
     event Sold(address buyer, uint256 amount);
@@ -63,20 +61,16 @@ contract NTokenSale {
     constructor (
         IBEP20  _tokenContract, 
         IBEP20 _busdAddress,
-        uint256 _saleSupply,
-        address _BUSD,
-        address _NarfexAddress, 
         address _pairAddress,
+        uint256 _saleSupply,
         uint256 _minAmountForUser,
         uint256 _maxAmountForUser
         ) {
         
         tokenContract = _tokenContract;
         busdAddress = _busdAddress;
-        saleSupply = _saleSupply * WAD;
-        BUSD = _BUSD;
-        NarfexAddress = _NarfexAddress;
         pairAddress = _pairAddress;
+        saleSupply = _saleSupply * WAD;
         minAmountForUser = _minAmountForUser * WAD;
         maxAmountForUser = _maxAmountForUser * WAD;
         owner = msg.sender;
@@ -126,9 +120,11 @@ contract NTokenSale {
     function withdraw(uint256 _numberOfTokens) public onlyWhitelisted {
         address _msgSender = msg.sender; // lower gas
 
-        require (buyers[_msgSender].availableBalance >= _numberOfTokens, "Not enough tokens to withdraw");
+        if (_numberOfTokens == 0 || _numberOfTokens > buyers[_msgSender].availableBalance) {
+            _numberOfTokens = buyers[_msgSender].availableBalance;
+        } 
+        
         require(tokenContract.balanceOf(address(this)) >= _numberOfTokens, "Not enough tokens in contract");
-
         buyers[_msgSender].availableBalance -= _numberOfTokens;
         tokenContract.transfer(_msgSender, _numberOfTokens);
         emit Withdraw (_msgSender, _numberOfTokens);
@@ -144,7 +140,7 @@ contract NTokenSale {
             require (block.timestamp - timeStartSale >= timeEndSale + firstUnlock); 
             buyers[_msgSender].NarfexPayied = true;
             buyers[_msgSender].unlocktTime = timeStartSale + timeEndSale + firstUnlock;
-            unlockToBalance = buyers[_msgSender].depositBUSD * WAD / getUSDPrice(NarfexAddress);
+            unlockToBalance = buyers[_msgSender].depositBUSD * WAD / getUSDPrice(address(tokenContract));
             buyers[_msgSender].depositBUSD = 0;
     
         } else {
@@ -187,7 +183,7 @@ contract NTokenSale {
     function getRatio(address _token0, address _token1) public view returns (uint) {
         PancakePair pair = PancakePair(pairAddress);
         (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = pair.getReserves();
-        if (NarfexAddress == _token0) {
+        if (address(tokenContract) == _token0) {
             return reserve1 * WAD / reserve0;
         } else {
             return reserve0 * WAD / reserve1;
@@ -198,10 +194,10 @@ contract NTokenSale {
     /// @param _token the address of Narfex (address of toren for price in BUSD)
     /// @return returns token BUSD price in a decimal number with 18 digits of precision
     function getUSDPrice(address _token) public view returns (uint) {
-        if (_token == BUSD) {
+        if (_token == address(busdAddress)) {
             return WAD;
         } else {
-            return getRatio(_token, BUSD);
+            return getRatio(_token, address(busdAddress));
         }
     }
 
