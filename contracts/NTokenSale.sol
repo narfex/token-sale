@@ -65,6 +65,7 @@ contract NTokenSale {
         uint256 _saleSupply,
         uint256 _minAmountForUser,
         uint256 _maxAmountForUser
+        //address _owner
         ) {
         
         tokenContract = _tokenContract;
@@ -75,6 +76,7 @@ contract NTokenSale {
         maxAmountForUser = _maxAmountForUser * WAD;
         owner = msg.sender;
         buyers[owner].whitelisted = true;
+        firstNarfexPrice = 4 * WAD / 10 ;
     }
 
     /// @notice verification of private purchase authorization
@@ -255,9 +257,9 @@ contract NTokenSale {
 
     /// @notice changes maximum of Narfex token avilable to buy for all users in buyTokens function
     /// @param _saleSupply maximum of Narfex token avilable to buy for all users in buyTokens function
-    function setSaleSupply(uint256 _saleSupply) public onlyOwner{
-        saleSupply = _saleSupply;
-    }
+    // function setSaleSupply(uint256 _saleSupply) public onlyOwner{
+    //     saleSupply = _saleSupply;
+    // }
 
     /// @notice change pairAddress
     /// @param _pairAddress address of Narfex-BUSD in PancakeSwap
