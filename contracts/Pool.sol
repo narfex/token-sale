@@ -28,14 +28,14 @@ contract Pool {
         bool deposited; // user is crowdFunder 
     }
 
-    mapping(address => crowdFunder) crowd; // array address to struct
+    mapping(address => crowdFunder) public crowd; // array address to struct
     
     address[] users; // array of users addresses
 
     IBEP20 public busdAddress; // BUSD address
     IBEP20 public NRFX; // address of Nrafex
     address public _owner; //owner of this pool
-    address public factoryOwner; //
+    address public factoryOwner; // owner of factory contract
     INTokenSale public tokenSaleContract; // address of token-sale contract
     bool public lockedNarfex; // from this point users can not deposit busd in this pool
     uint256 public maxPoolAmount; // maximum of crowdfunding amount
@@ -86,11 +86,11 @@ contract Pool {
     function withdrawNRFX(uint256 _numberOfTokens) external {
        address _msgSender = msg.sender;
 
-       require(
-           _numberOfTokens <= crowd[_msgSender].avialableBalance,
-           "You don't have enough NRFX to withdraw"
-        );
-       crowd[_msgSender].avialableBalance -= _numberOfTokens; 
+        if (_numberOfTokens > crowd[_msgSender].avialableBalance) {
+            _numberOfTokens = crowd[_msgSender].avialableBalance;
+        }
+       crowd[_msgSender].avialableBalance -= _numberOfTokens;
+       NRFX.transfer(_msgSender, _numberOfTokens);
     }
 
     /// @notice transfer BUSD to token-sale contract for participate in token-sale
