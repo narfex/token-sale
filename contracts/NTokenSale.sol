@@ -110,8 +110,8 @@ contract NTokenSale {
         uint256 scaledAmount = amount * WAD / firstNarfexPrice;
         require(scaledAmount <= saleSupply, "You can not buy more than maximum supply");
         saleSupply = saleSupply - scaledAmount;
-        buyers[_msgSender].depositBUSD = amount;
-        buyers[_msgSender].numberOfTokens = scaledAmount;
+        buyers[_msgSender].depositBUSD += amount;
+        buyers[_msgSender].numberOfTokens += scaledAmount;
         
         busdAddress.transferFrom(_msgSender, address(this), amount);
         emit Sold(_msgSender, scaledAmount);
