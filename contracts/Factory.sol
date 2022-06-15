@@ -5,13 +5,19 @@ import "./Pool.sol";
 
 contract Factory {
 
+    struct Pools{
+        address poolAddress;
+        address poolOwner;
+        uint256 id;
+    }
+
     IBEP20 public busdAddress; // BUSD address
     IBEP20 public NRFX; // address of Nrafex
     NTokenSale public tokenSaleContract; // address of token-sale contract
     uint256 public pid; // pool id
     address public owner;
 
-    mapping(uint256 => address) public pools;
+    mapping(uint256 => Pools) public pools;
 
     constructor(
         IBEP20 _busdAddress,
@@ -25,17 +31,20 @@ contract Factory {
     }
 
     /// @notice creating pool for crowdfunding
-    function createPool() public returns(uint256) {
+    /// @param _maxAmount maximum of crowdfunding amount
+    function createPool(uint256 _maxAmount) public {
+        require(_maxAmount > 0,"_maxAmount can not be zero");
         pid += 1;
-        Pool pool = new Pool(busdAddress, NRFX, tokenSaleContract);
-        pools[pid] = address(pool);
-        return pid;
+        Pool pool = new Pool(busdAddress, NRFX, tokenSaleContract, _maxAmount);
+        pools[pid].poolAddress = address(pool);
+        pools[pid].id = pid;
+        
     }
 
     /// @notice changes owner address of factory
     /// @param _owner the address of new owner
     function changeOwner(address _owner) public {
-        require(msg.sender == _owner);
+        require(msg.sender == owner);
         owner = _owner;
     }
 
