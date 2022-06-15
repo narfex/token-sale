@@ -13,21 +13,21 @@ contract Factory {
 
     IBEP20 public busdAddress; // BUSD address
     IBEP20 public NRFX; // address of Nrafex
-    NTokenSale public tokenSaleContract; // address of token-sale contract
+    INTokenSale public tokenSaleContract; // address of token-sale contract
     uint256 public pid; // pool id
-    address public owner;
+    address public factoryOwner;
 
     mapping(uint256 => Pools) public pools;
 
     constructor(
         IBEP20 _busdAddress,
         IBEP20 _NRFX,
-        NTokenSale _tokenSaleContract
+        INTokenSale _tokenSaleContract
         ) {
         busdAddress = _busdAddress;
         NRFX = _NRFX;
         tokenSaleContract = _tokenSaleContract;
-        owner = msg.sender;
+        factoryOwner = msg.sender;
     }
 
     /// @notice creating pool for crowdfunding
@@ -35,7 +35,7 @@ contract Factory {
     function createPool(uint256 _maxAmount) public {
         require(_maxAmount > 0,"_maxAmount can not be zero");
         pid += 1;
-        Pool pool = new Pool(busdAddress, NRFX, tokenSaleContract, _maxAmount);
+        Pool pool = new Pool(busdAddress, NRFX, tokenSaleContract, factoryOwner, _maxAmount);
         pools[pid].poolAddress = address(pool);
         pools[pid].id = pid;
         
@@ -44,8 +44,8 @@ contract Factory {
     /// @notice changes owner address of factory
     /// @param _owner the address of new owner
     function changeOwner(address _owner) public {
-        require(msg.sender == owner);
-        owner = _owner;
+        require(msg.sender == factoryOwner);
+        factoryOwner = _owner;
     }
 
 }
