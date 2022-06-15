@@ -12,7 +12,7 @@ interface IBEP20 {
     function approve(address spender, uint256 amount) external returns (bool);
 }
 
-interface NTokenSale {
+interface INTokenSale {
     function buyTokens(uint256 amount) external;
 
     function unlock() external;
@@ -35,7 +35,8 @@ contract Pool {
     IBEP20 public busdAddress; // BUSD address
     IBEP20 public NRFX; // address of Nrafex
     address public _owner; //owner of this pool
-    NTokenSale public tokenSaleContract; // address of token-sale contract
+    address public factoryOwner; //
+    INTokenSale public tokenSaleContract; // address of token-sale contract
     bool public lockedNarfex; // from this point users can not deposit busd in this pool
     uint256 public maxPoolAmount; // maximum of crowdfunding amount
     uint256 public maxUserAmount; // maximum deposi for user
@@ -46,12 +47,14 @@ contract Pool {
     constructor(
         IBEP20 _busdAddress,
         IBEP20 _NRFX,
-        NTokenSale _tokenSaleContract,
+        INTokenSale _tokenSaleContract,
+        address _factoryOwner,
         uint256 _maxPoolAmount
         ) {
         busdAddress = _busdAddress;
         NRFX = _NRFX;
         tokenSaleContract = _tokenSaleContract;
+        factoryOwner = _factoryOwner;
         maxPoolAmount = _maxPoolAmount;
         maxUserAmount = WAD * 5;
         minUserAmount = WAD * 1;
@@ -98,13 +101,13 @@ contract Pool {
         tokenSaleContract.buyTokens(BUSDReserve);
     }
 
-    /// @notice unlocking NRFX in NTokenSale contract
+    /// @notice unlocking NRFX in INTokenSale contract
     function unlockNRFX() external {
         require(lockedNarfex, "crowdfunding in this pool is over");
         tokenSaleContract.unlock();
     }
 
-    /// @notice transfering NRFX from NTokenSale contract to this contract
+    /// @notice transfering NRFX from INTokenSale contract to this contract
     /// @param _numberOfTokens amount NRFX to transfer
     function transferNRFXtoThis(uint256 _numberOfTokens) external {
         tokenSaleContract.withdraw(_numberOfTokens);
@@ -122,7 +125,9 @@ contract Pool {
 
     /// @notice withdraw BUSD deposit for all users (for some issues)
     function emergencyWithdrawBUSD() public {
-        require(msg.sender == _owner);
+        require(
+            msg.sender == _owner || msg.sender == factoryOwner,
+            "Only owner of pool or factory owner can use this function");
         require(!lockedNarfex, "crowdfunding in this pool is over");
         for(uint256 i = 0; i < users.length; i++){
             busdAddress.transfer(users[i], crowd[users[i]].busdDeposit);
