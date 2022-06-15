@@ -28,34 +28,53 @@ contract Pool {
         bool deposited; // user is crowdFunder 
     }
 
-    mapping(address => crowdFunder) crowd;
+    mapping(address => crowdFunder) crowd; // array address to struct
+    
+    address[] users; // array of users addresses
 
     IBEP20 public busdAddress; // BUSD address
     IBEP20 public NRFX; // address of Nrafex
+    address public _owner; //owner of this pool
     NTokenSale public tokenSaleContract; // address of token-sale contract
     bool public lockedNarfex; // from this point users can not deposit busd in this pool
+    uint256 public maxPoolAmount; // maximum of crowdfunding amount
+    uint256 public maxUserAmount; // maximum deposi for user
+    uint256 public minUserAmount; // minimum deposi for user
+    uint256 public BUSDReserve; // all BUSD in contract before participate in token-sale
     uint constant WAD = 10 ** 18; // Decimal number with 18 digits of precision
 
     constructor(
         IBEP20 _busdAddress,
         IBEP20 _NRFX,
-        NTokenSale _tokenSaleContract
+        NTokenSale _tokenSaleContract,
+        uint256 _maxPoolAmount
         ) {
         busdAddress = _busdAddress;
         NRFX = _NRFX;
         tokenSaleContract = _tokenSaleContract;
+        maxPoolAmount = _maxPoolAmount;
+        maxUserAmount = WAD * 5;
+        minUserAmount = WAD * 1;
+        _owner = msg.sender;
     }
 
     /// @notice deposit BUSD tokens from crowdfunders for this pool
     /// @param amount of deposit in this pool in BUSD 
     function depositBUSD(uint256 amount) external {
         address _msgSender = msg.sender;
-
+        require(maxPoolAmount - amount >= 0, "You can not deposit this amount");
         require(!lockedNarfex, "crowdfunding in this pool is over");
-        require(amount >= 0,"Deposit more than ZERO");
-        
+        require(amount >= minUserAmount, "Deposit should be more than minUserAmount");
+        require(amount + crowd[_msgSender].busdDeposit <= maxUserAmount, "Deposit should be less than maxUserAmount");
+
+        if (!crowd[_msgSender].deposited) {
+            crowd[_msgSender].deposited = true;
+            users.push(_msgSender);
+        } 
+
+        maxPoolAmount -= amount;
         crowd[_msgSender].busdDeposit += amount;
-        crowd[_msgSender].deposited = true;
+        
         busdAddress.transferFrom(_msgSender, address(this), amount);
     }
 
@@ -71,31 +90,45 @@ contract Pool {
        crowd[_msgSender].avialableBalance -= _numberOfTokens; 
     }
 
-    /// @notice transfer BUSD to participate in token-sale
-    /// @param amount amount of BUSD
-    function buyNRFX(uint256 amount) external {
-        require(amount <= getBUSDReserve(), "You don't have this amount of BUSD");
+    /// @notice transfer BUSD to token-sale contract for participate in token-sale
+    function buyNRFX() external {
+        BUSDReserve = getBUSDReserve();
         lockedNarfex = true;
-        busdAddress.approve(address(tokenSaleContract), amount);
-        tokenSaleContract.buyTokens(amount);
+        busdAddress.approve(address(tokenSaleContract), BUSDReserve);
+        tokenSaleContract.buyTokens(BUSDReserve);
     }
 
-    /// @notice unlocking and transfering NRFX from NTokenSale contract to this contract
-    /// @param _numberOfTokens amount NRFX to unlock and transfer
-    function unlockNRFX(uint256 _numberOfTokens) external {
+    /// @notice unlocking NRFX in NTokenSale contract
+    function unlockNRFX() external {
         require(lockedNarfex, "crowdfunding in this pool is over");
         tokenSaleContract.unlock();
+    }
+
+    /// @notice transfering NRFX from NTokenSale contract to this contract
+    /// @param _numberOfTokens amount NRFX to transfer
+    function transferNRFXtoThis(uint256 _numberOfTokens) external {
         tokenSaleContract.withdraw(_numberOfTokens);
     }
 
     /// @notice distributes NRFX to each user
     function claimNRFX() external  {
-        address _msgSender = msg.sender;
-
         require(lockedNarfex, "crowdfunding in this pool is over");
-        require(crowd[_msgSender].deposited, "You are not crowdFunder");
-        crowd[_msgSender].deposited = false;
-        crowd[_msgSender].avialableBalance = getUserReserve(_msgSender);
+        for(uint256 i = 0; i < users.length; i++){
+            crowd[users[i]].avialableBalance = getUserReserve(users[i]);
+            crowd[users[i]].deposited = false;
+        }
+        
+    }
+
+    /// @notice withdraw BUSD deposit for all users (for some issues)
+    function emergencyWithdrawBUSD() public {
+        require(msg.sender == _owner);
+        require(!lockedNarfex, "crowdfunding in this pool is over");
+        for(uint256 i = 0; i < users.length; i++){
+            busdAddress.transfer(users[i], crowd[users[i]].busdDeposit);
+            crowd[users[i]].busdDeposit = 0;
+            crowd[users[i]].deposited = false;
+        }
     }
 
     /// @notice get balance of BUSD tokens in this pool
@@ -111,8 +144,8 @@ contract Pool {
     /// @notice get percentage of BUSD in this pool for each user
     /// @param _user address of crowdfunder
     /// @return returns percentage of BUSD in this pool for each user
-    function getUserPercantage(address _user) public view returns(uint256){
-        uint256 percantage = crowd[_user].busdDeposit * WAD / getBUSDReserve();
+    function getUsersPiece(address _user) public view returns(uint256){
+        uint256 percantage = crowd[_user].busdDeposit * WAD / BUSDReserve;
         return percantage;
     }
 
@@ -120,7 +153,7 @@ contract Pool {
     /// @param _user address of crowdfunder
     /// @return returns avialable amount of NRFX for each user
     function getUserReserve(address _user) public view returns(uint256){
-        return getNRFXReserve() * WAD / getUserPercantage(_user);
+        return getNRFXReserve() * WAD / getUsersPiece(_user);
     }
 
     /// @notice get address of this pool
