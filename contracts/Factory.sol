@@ -6,16 +6,17 @@ import "./Pool.sol";
 contract Factory {
 
     struct Pools{
-        address poolAddress;
-        address poolOwner;
-        uint256 id;
+        address poolAddress; // address of pool
+        address poolOwner; // address of pool's owner
+        uint256 id; // pool's id
+        uint256 maxAmount; // maximum supply of deposit to all users in this pool
     }
 
     IBEP20 public busdAddress; // BUSD address
     IBEP20 public NRFX; // address of Nrafex
     INTokenSale public tokenSaleContract; // address of token-sale contract
     uint256 public pid; // pool id
-    address public factoryOwner;
+    address public factoryOwner; // owner of factory
 
     mapping(uint256 => Pools) public pools;
 
@@ -38,6 +39,7 @@ contract Factory {
         Pool pool = new Pool(busdAddress, NRFX, tokenSaleContract, factoryOwner, _maxAmount);
         pools[pid].poolAddress = address(pool);
         pools[pid].id = pid;
+        pools[pid].maxAmount = _maxAmount;
         
     }
 
