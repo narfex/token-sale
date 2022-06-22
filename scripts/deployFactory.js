@@ -21,7 +21,9 @@ async function main() {
     "0x3764Be118a1e09257851A3BD636D48DFeab5CAFE", // tokenContract
     "0xFbA1906e682BF0032D26EfBA6bFC5229a663B968", // tokenSaleContract
     "0x9e8db3942797d2578f48caf5663eb22e286ad84b", // factoryOwner
-    2, // maxPoolAmount
+    3, // maxPoolAmount
+    1, // minimum deposit for user in pools
+    2, // maximum deposit for user in pools
   );
   await pool.deployed();
 
@@ -58,7 +60,9 @@ main()
 //     "0xcDA8eD22bB27Fe84615f368D09B5A8Afe4a99320", // tokenContract
 //     "0x9cE316e703C6BdcaD8ada3dCF2d3a4E3911C0d4c", // tokenSaleContract
 //     "0x9e8db3942797d2578f48caf5663eb22e286ad84b", // factoryOwner
-//     2, // maxPoolAmount
+//     3, // maxPoolAmount
+//     1, // minimum deposit for user in pools
+//     2, // maximum deposit for user in pools 
 //   );
 //   await pool.deployed();
 
