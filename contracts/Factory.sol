@@ -8,46 +8,63 @@ contract Factory {
     struct Pools{
         address poolAddress; // address of pool
         address poolOwner; // address of pool's owner
-        uint256 id; // pool's id
         uint256 maxAmount; // maximum supply of deposit to all users in this pool
     }
 
     IBEP20 public busdAddress; // BUSD address
     IBEP20 public NRFX; // address of Nrafex
     INTokenSale public tokenSaleContract; // address of token-sale contract
-    uint256 public pid; // pool id
     address public factoryOwner; // owner of factory
+    uint256 public minUserAmount; // minimum deposit for user in pools
+    uint256 public maxUserAmount; // maximum deposit for user in pools
 
-    mapping(uint256 => Pools) public pools;
+    mapping(address => Pools) public pools;
+
+    modifier onlyFactoryOwner {
+        require(msg.sender == factoryOwner, "You are not factory owner");
+        _;
+    }
 
     constructor(
         IBEP20 _busdAddress,
         IBEP20 _NRFX,
-        INTokenSale _tokenSaleContract
+        INTokenSale _tokenSaleContract,
+        address _factoryOwner
         ) {
         busdAddress = _busdAddress;
         NRFX = _NRFX;
         tokenSaleContract = _tokenSaleContract;
-        factoryOwner = msg.sender;
+        factoryOwner = _factoryOwner;
     }
 
     /// @notice creating pool for crowdfunding
     /// @param _maxAmount maximum of crowdfunding amount
     function createPool(uint256 _maxAmount) public {
+        address _msgSender = msg.sender;
         require(_maxAmount > 0,"_maxAmount can not be zero");
-        pid += 1;
-        Pool pool = new Pool(busdAddress, NRFX, tokenSaleContract, factoryOwner, _maxAmount);
-        pools[pid].poolAddress = address(pool);
-        pools[pid].id = pid;
-        pools[pid].maxAmount = _maxAmount;
-        
+        require(pools[_msgSender].poolOwner != _msgSender,"You can create pool only once");
+        Pool pool = new Pool(busdAddress, NRFX, tokenSaleContract, factoryOwner, _maxAmount, minUserAmount, maxUserAmount);
+        pools[_msgSender].poolAddress = address(pool);
+        pools[_msgSender].maxAmount = _maxAmount;
+        pools[_msgSender].poolOwner = _msgSender;
     }
 
     /// @notice changes owner address of factory
     /// @param _owner the address of new owner
-    function changeOwner(address _owner) public {
-        require(msg.sender == factoryOwner);
+    function changeOwner(address _owner) public onlyFactoryOwner{
         factoryOwner = _owner;
+    }
+
+    /// @notice set minimum deposit for user in pools
+    /// @param _minUserAmount new minimum deposit for user in pools
+    function setMinUserAmount(uint256 _minUserAmount) public onlyFactoryOwner{
+        minUserAmount = _minUserAmount;
+    }
+
+    /// @notice set maximum deposit for user in pools
+    /// @param _maxUserAmount new maximum deposit for user in pools
+    function setMaxUserAmount(uint256 _maxUserAmount) public onlyFactoryOwner{
+        maxUserAmount = _maxUserAmount;
     }
 
 }
