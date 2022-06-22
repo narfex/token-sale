@@ -33,14 +33,14 @@ contract Pool {
     address[] users; // array of users addresses
 
     IBEP20 public busdAddress; // BUSD address
-    IBEP20 public NRFX; // address of Nrafex
+    IBEP20 public NRFX; // address of Narfex
     address public _owner; //owner of this pool
     address public factoryOwner; // owner of factory contract
     INTokenSale public tokenSaleContract; // address of token-sale contract
-    bool public lockedNarfex; // from this point users can not deposit busd in this pool
+    bool public lockedNarfex; // from this point users can not deposit busd to this pool
     uint256 public maxPoolAmount; // maximum of crowdfunding amount
-    uint256 public maxUserAmount; // maximum deposi for user
-    uint256 public minUserAmount; // minimum deposi for user
+    uint256 public maxUserAmount; // maximum deposit for user
+    uint256 public minUserAmount; // minimum deposit for user
     uint256 public BUSDReserve; // all BUSD in contract before participate in token-sale
     uint constant WAD = 10 ** 18; // Decimal number with 18 digits of precision
 

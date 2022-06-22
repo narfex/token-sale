@@ -19,6 +19,7 @@ contract Factory {
     uint256 public maxUserAmount; // maximum deposit for user in pools
 
     mapping(address => Pools) public pools;
+    address[] public poolsList;
 
     modifier onlyFactoryOwner {
         require(msg.sender == factoryOwner, "You are not factory owner");
@@ -29,12 +30,16 @@ contract Factory {
         IBEP20 _busdAddress,
         IBEP20 _NRFX,
         INTokenSale _tokenSaleContract,
-        address _factoryOwner
+        address _factoryOwner,
+        uint _minUserAmount,
+        uint _maxUserAmount
         ) {
         busdAddress = _busdAddress;
         NRFX = _NRFX;
         tokenSaleContract = _tokenSaleContract;
         factoryOwner = _factoryOwner;
+        minUserAmount = _minUserAmount;
+        maxUserAmount = _maxUserAmount;
     }
 
     /// @notice creating pool for crowdfunding
@@ -42,8 +47,9 @@ contract Factory {
     function createPool(uint256 _maxAmount) public {
         address _msgSender = msg.sender;
         require(_maxAmount > 0,"_maxAmount can not be zero");
-        require(pools[_msgSender].poolOwner != _msgSender,"You can create pool only once");
+        require(pools[_msgSender].poolOwner != _msgSender,"You can create a pool only once");
         Pool pool = new Pool(busdAddress, NRFX, tokenSaleContract, factoryOwner, _maxAmount, minUserAmount, maxUserAmount);
+        poolsList.push(address(pool));
         pools[_msgSender].poolAddress = address(pool);
         pools[_msgSender].maxAmount = _maxAmount;
         pools[_msgSender].poolOwner = _msgSender;
@@ -65,6 +71,12 @@ contract Factory {
     /// @param _maxUserAmount new maximum deposit for user in pools
     function setMaxUserAmount(uint256 _maxUserAmount) public onlyFactoryOwner{
         maxUserAmount = _maxUserAmount;
+    }
+
+    /// @notice Returns poolsList length
+    /// @return Pools count
+    function getPoolsCount() external view returns (uint) {
+        return poolsList.length;
     }
 
 }

@@ -1,4 +1,5 @@
 const hre = require("hardhat");
+const { ethers } = require("hardhat");
 
 async function main() {
 
@@ -8,7 +9,9 @@ async function main() {
     "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56", // busdAddress
     "0x3764Be118a1e09257851A3BD636D48DFeab5CAFE", // tokenContract
     "0xFbA1906e682BF0032D26EfBA6bFC5229a663B968", // tokenSaleContract //0x9cE316e703C6BdcaD8ada3dCF2d3a4E3911C0d4c
-    "0x9e8db3942797d2578f48caf5663eb22e286ad84b", // factoryOwner
+    "0xa4FF4DBb11F3186a1e96d3e8DD232E31159Ded9B", // factoryOwner
+    1 * (10**18),
+    5 * (10**18),
   );
   await factory.deployed();
 
@@ -20,10 +23,10 @@ async function main() {
     "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56", // busdAddress
     "0x3764Be118a1e09257851A3BD636D48DFeab5CAFE", // tokenContract
     "0xFbA1906e682BF0032D26EfBA6bFC5229a663B968", // tokenSaleContract
-    "0x9e8db3942797d2578f48caf5663eb22e286ad84b", // factoryOwner
-    3, // maxPoolAmount
-    1, // minimum deposit for user in pools
-    2, // maximum deposit for user in pools
+    "0xa4FF4DBb11F3186a1e96d3e8DD232E31159Ded9B", // factoryOwner
+    10 * (10**18), // maxPoolAmount
+    1 * (10**18), // minimum deposit for user in pools
+    5 * (10**18), // maximum deposit for user in pools
   );
   await pool.deployed();
 

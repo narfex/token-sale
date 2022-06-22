@@ -11,5 +11,10 @@
   "dependencies": {
     "@nomiclabs/hardhat-etherscan": "^3.0.3",
     "dotenv": "^16.0.1"
+  },
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "deployBSC": "npx hardhat run scripts/deploy.jsx --network bsc",
+    "deployTest": "npx hardhat run scripts/deployTest.jsx --network test"
   }
 }
