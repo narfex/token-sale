@@ -66,7 +66,7 @@ contract Pool {
     function depositBUSD(uint256 amount) external {
         address _msgSender = msg.sender;
         require(maxPoolAmount - amount >= 0, "You can not deposit this amount");
-        require(!lockedNarfex, "crowdfunding in this pool is over");
+        require(!poolCollected(), "crowdfunding in this pool is over");
         require(amount >= minUserAmount, "Deposit should be more than minUserAmount");
         require(amount + crowd[_msgSender].busdDeposit <= maxUserAmount, "Deposit should be less than maxUserAmount");
 
@@ -95,6 +95,7 @@ contract Pool {
 
     /// @notice transfer BUSD to token-sale contract for participate in token-sale
     function buyNRFX() external {
+        require(!poolCollected(), "crowdfunding in this pool is over");
         BUSDReserve = getBUSDReserve();
         lockedNarfex = true;
         busdAddress.approve(address(tokenSaleContract), BUSDReserve);
@@ -105,22 +106,11 @@ contract Pool {
     function unlockNRFX() external {
         require(lockedNarfex, "crowdfunding in this pool is over");
         tokenSaleContract.unlock();
-    }
-
-    /// @notice transfering NRFX from INTokenSale contract to this contract
-    /// @param _numberOfTokens amount NRFX to transfer
-    function transferNRFXtoThis(uint256 _numberOfTokens) external {
-        tokenSaleContract.withdraw(_numberOfTokens);
-    }
-
-    /// @notice distributes NRFX to each user
-    function claimNRFX() external  {
-        require(lockedNarfex, "crowdfunding in this pool is over");
+        tokenSaleContract.withdraw(0);
         for(uint256 i = 0; i < users.length; i++){
             crowd[users[i]].avialableBalance = getUserReserve(users[i]);
             crowd[users[i]].deposited = false;
         }
-        
     }
 
     /// @notice withdraw BUSD deposit for all users (for some issues)
@@ -166,5 +156,24 @@ contract Pool {
     function getPoolAddress() public view returns(address){
         return address(this);
     }
+
+    /// @notice get information about balance pool == maxPoolAmount
+    function poolCollected() public view returns(bool){
+        return busdAddress.balanceOf(address(this)) == maxPoolAmount ? true : false;
+    }
+
+    /// @notice changes amount of minimum deposit BUSD in depositBUSD function
+    /// @param _minAmountForUser minimum deposit BUSD in depositBUSD function
+    function setMinAmountForUser (uint256 _minAmountForUser) public {
+        require(msg.sender == factoryOwner);
+        minUserAmount = _minAmountForUser;
+    }
+
+    /// @notice changes amount of maximum deposit BUSD in depositBUSD function
+    /// @param _maxAmountForUser maximum deposit BUSD in depositBUSD function
+    function setMaxAmountForUser (uint256 _maxAmountForUser) public {
+        require(msg.sender == factoryOwner);
+        maxUserAmount = _maxAmountForUser;
+    } 
 
 }
