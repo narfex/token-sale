@@ -14,7 +14,7 @@
   },
   "scripts": {
     "compile": "npx hardhat compile",
-    "deployFactoryBSC": "npx hardhat run scripts/deployFactory.jsx --network bsc",
-    "deployFactoryTest": "npx hardhat run scripts/deployFactory.jsx --network test"
+    "deployFactoryBSC": "npx hardhat run scripts/deployFactory.js --network bsc",
+    "deployFactoryTest": "npx hardhat run scripts/deployFactory.js --network test"
   }
 }
