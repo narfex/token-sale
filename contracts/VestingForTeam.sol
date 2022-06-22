@@ -6,6 +6,10 @@ interface IBEP20 {
     function balanceOf(address account) external view returns (uint256);
 }
 
+/// @title Vesting contract for Narfex team
+/// @author Potemkin Viktor
+/// @notice Transfering every 6 month 10% of Narfex tokens from all team supply
+
 contract VestingForTeam {
 
     IBEP20 public tokenContract;  // the token being sold
@@ -23,7 +27,7 @@ contract VestingForTeam {
         percantageUnlock = block.timestamp;
     }
 
-    /// @notice this function withdrawal every half of year 10% of Narffex tokens from all suuply for team
+    /// @notice this function withdrawal every half of a year 10% of Narffex tokens from all supply for team
     function claimNRFX() public {
         require(msg.sender == owner, "Not owner");
         require(block.timestamp - percantageUnlock >= 183 days, "Wait half an year");
