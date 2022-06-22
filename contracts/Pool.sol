@@ -49,15 +49,17 @@ contract Pool {
         IBEP20 _NRFX,
         INTokenSale _tokenSaleContract,
         address _factoryOwner,
-        uint256 _maxPoolAmount
+        uint256 _maxPoolAmount,
+        uint256 _minUserAmount,
+        uint256 _maxUserAmount
         ) {
         busdAddress = _busdAddress;
         NRFX = _NRFX;
         tokenSaleContract = _tokenSaleContract;
         factoryOwner = _factoryOwner;
         maxPoolAmount = _maxPoolAmount;
-        maxUserAmount = WAD * 5;
-        minUserAmount = WAD * 1;
+        maxUserAmount = _minUserAmount;
+        minUserAmount = _maxUserAmount;
         _owner = msg.sender;
     }
 
