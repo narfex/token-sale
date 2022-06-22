@@ -18,7 +18,15 @@ const networks = {
 };
 
 module.exports = {
-  solidity: "0.8.13",
+  solidity: {
+        version: "0.8.13",
+        settings: {
+            optimizer: {
+                enabled: true,
+                runs: 200
+            }
+        }
+    },
   networks: networks,
   etherscan: {
     apiKey: "EYK2X8KUEV48N8J3WPJKE5YTY3IHSVJH32"
