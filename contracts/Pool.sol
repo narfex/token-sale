@@ -9,7 +9,7 @@ interface IBEP20 {
     function approve(address spender, uint256 amount) external returns (bool);
 }
 
-interface ITokenSale {
+interface INTokenSale {
     function buyTokens(uint256 amount) external;
     function unlock() external;
     function withdraw(uint256 _numberOfTokens) external;
@@ -32,7 +32,7 @@ contract Pool {
     IBEP20 public nrfxAddress; // address of Narfex
     address public _owner; //owner of this pool
     address public factoryOwner; // owner of factory contract
-    ITokenSale public tokenSaleAddress; // address of token-sale contract
+    INTokenSale public tokenSaleAddress; // address of token-sale contract
     bool public isNarfexLocked; // from this point users can not deposit busd to this pool
     uint256 public maxPoolAmount; // maximum of crowdfunding amount
     uint256 public minUserDeposit; // minimum deposit for user
@@ -43,7 +43,7 @@ contract Pool {
     constructor(
         IBEP20 _busdAddress,
         IBEP20 _nrfxAddress,
-        ITokenSale _tokenSaleAddress,
+        INTokenSale _tokenSaleAddress,
         address _factoryOwner,
         uint256 _maxPoolAmount,
         uint256 _minUserDeposit,
@@ -105,7 +105,7 @@ contract Pool {
         tokenSaleAddress.buyTokens(busdBalance);
     }
 
-    /// @notice unlocking NRFX in ITokenSale contract
+    /// @notice unlocking NRFX in INTokenSale contract
     function unlockNRFX() external {
         require(isNarfexLocked, "Crowdfunding in this pool is over");
         tokenSaleAddress.unlock();
