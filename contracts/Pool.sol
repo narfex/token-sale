@@ -58,8 +58,8 @@ contract Pool {
         tokenSaleContract = _tokenSaleContract;
         factoryOwner = _factoryOwner;
         maxPoolAmount = _maxPoolAmount;
-        maxUserAmount = _minUserAmount;
-        minUserAmount = _maxUserAmount;
+        maxUserAmount = _maxUserAmount;
+        minUserAmount = _minUserAmount;
         _owner = msg.sender;
     }
 
