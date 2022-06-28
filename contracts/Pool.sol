@@ -9,11 +9,12 @@ interface IBEP20 {
     function approve(address spender, uint256 amount) external returns (bool);
 }
 
-interface INTokenSale {
+interface INarfexTokenSale {
     function buyTokens(uint256 amount) external;
     function unlock() external;
     function withdraw(uint256 _numberOfTokens) external;
     function isWhitelisted(address _address) external view returns(bool);
+    function getAvailableBalance(address _address) external view returns(uint256);
 }
 
 contract Pool {
@@ -32,7 +33,7 @@ contract Pool {
     IBEP20 public nrfxAddress; // address of Narfex
     address public _owner; //owner of this pool
     address public factoryOwner; // owner of factory contract
-    INTokenSale public tokenSaleAddress; // address of token-sale contract
+    INarfexTokenSale public tokenSaleAddress; // address of token-sale contract
     bool public isNarfexLocked; // from this point users can not deposit busd to this pool
     uint256 public maxPoolAmount; // maximum of crowdfunding amount
     uint256 public minUserDeposit; // minimum deposit for user
@@ -43,7 +44,7 @@ contract Pool {
     constructor(
         IBEP20 _busdAddress,
         IBEP20 _nrfxAddress,
-        INTokenSale _tokenSaleAddress,
+        INarfexTokenSale _tokenSaleAddress,
         address _factoryOwner,
         uint256 _maxPoolAmount,
         uint256 _minUserDeposit,
@@ -109,9 +110,12 @@ contract Pool {
     function unlockNRFX() external {
         require(isNarfexLocked, "Crowdfunding in this pool is over");
         tokenSaleAddress.unlock();
+        // Get the incoming balance before withdraw to divide it before it adds up to the pool balance
+        uint income = tokenSaleAddress.getAvailableBalance(address(this));
+        // Send NRFX to the Pool
         tokenSaleAddress.withdraw(0);
         for(uint256 i = 0; i < users.length; i++){
-            crowd[users[i]].availableBalance = getUserNrfxBalance(users[i]);
+            crowd[users[i]].availableBalance += getUserIncomeShare(income, users[i]);
             crowd[users[i]].deposited = false;
         }
     }
@@ -150,14 +154,30 @@ contract Pool {
             : 0;
     }
 
-    /// @notice Returns available amount of NRFX for each user
+    /// @notice Returns amount of user available balace in the income
+    /// @param _income Amount of tokens
     /// @param _user Address of Crowdfunder
     /// @return NRFX amount
-    function getUserNrfxBalance(address _user) public view returns(uint256) {
+    function getUserIncomeShare(uint _income, address _user) internal view returns(uint256) {
         uint share = getUserShare(_user);
         return share > 0
-            ? getNrfxBalance() * WAD / share
+            ? _income * WAD / share
             : 0;
+    }
+
+    /// @notice Returns amount of NRFX available in the Pool
+    /// @param _user Crowdfunder address
+    /// @return NRFX amount
+    function getUserAvailableNRFX(address _user) public view returns(uint256) {
+        return crowd[_user].availableBalance;
+    }
+
+    /// @notice Returns amount of NRFX available in the Pool and NarfexTokenSale both
+    /// @param _user Crowdfunder address
+    /// @return NRFX amount
+    function getUserNRFXBalance(address _user) public view returns(uint) {
+        uint income = tokenSaleAddress.getAvailableBalance(address(this));
+        return crowd[_user].availableBalance + getUserIncomeShare(income, _user);
     }
 
     /// @notice Returns true if the pool is full

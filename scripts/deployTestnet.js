@@ -2,20 +2,21 @@ const hre = require("hardhat");
 
 async function main() {
 
-  const NTokenSale = await ethers.getContractFactory("NTokenSale");
+  const NTokenSale = await ethers.getContractFactory("NarfexTokenSale");
 
   const nTokenSale = await NTokenSale.deploy(
     "0xcDA8eD22bB27Fe84615f368D09B5A8Afe4a99320", // tokenContract
-    "0x78867BbEeF44f2326bF8DDd1941a4439382EF2A7", // busdAddress
+    "0x78867bbeef44f2326bf8ddd1941a4439382ef2a7", // busdAddress
     "0xf47644E079303263a2DE0829895d000900d2fAb8", // pair Narfex -> BUSD in PancakeSwap
-    800, // saleSupply
-    1, // minimum amount of deposit to buy in busd for each user
-    3, // maximum amount of deposit for sale in busd for each user
-    "0x9e8db3942797d2578f48caf5663eb22e286ad84b", // owner address
+    Number(1 * (10**18)).toFixed(0), // min
+    Number(5 * (10**18)).toFixed(0), // max
+    Number(0.4 * (10**18)).toFixed(0), // First Narfex Price
+    60 * 60 * 2, // First unlock in seconds
+    60 * 60 * 1, // Percentage unlock in seconds
   );
   await nTokenSale.deployed();
 
-  console.log("NTokenSale deployed to:", nTokenSale.address);
+  console.log("NarfexTokenSale deployed to:", nTokenSale.address);
 }
 
 main() 
