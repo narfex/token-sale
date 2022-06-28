@@ -27,7 +27,7 @@ contract NarfexTokenSale {
     // user participating in the Narfex private sale
     struct Buyer{
         uint256 narfexAmount; // Current narfex amount left
-        uint256 narfexAfterUnlock; // Narfex amount left after the first unlock
+        uint256 tenPercents; // Narfex amount left after the first unlock
         uint256 busdDeposit; // deposit for buy tokens in private sale
         uint256 unlockTime; // time point when user unlock tokens
         uint256 availableBalance; // token balance to withdraw
@@ -140,7 +140,6 @@ contract NarfexTokenSale {
         Buyer storage buyer = buyers[_msgSender];
         require(block.timestamp - saleStartTime > toEndSecondsAmount);
 
-        uint256 unlockToBalance;
         if (!buyer.isNarfexPayed) {
             // Unlock tokens after 60 days for buyers 
             require (block.timestamp - saleStartTime >= toEndSecondsAmount + firstUnlockSeconds); 
@@ -148,31 +147,30 @@ contract NarfexTokenSale {
             // Apply a new unlock time
             buyer.unlockTime = saleStartTime + toEndSecondsAmount + firstUnlockSeconds;
             // Calculate amount
-            unlockToBalance = buyer.busdDeposit * WAD / getNarfexBUSDPrice();
-            if (buyer.narfexAmount < unlockToBalance) {
-                unlockToBalance = buyer.narfexAmount;
+            uint unlockAmount = buyer.busdDeposit * WAD / getNarfexBUSDPrice();
+            if (buyer.narfexAmount < unlockAmount) {
+                unlockAmount = buyer.narfexAmount;
             }
             // Apply a new amount
             buyer.busdDeposit = 0;
-            buyer.narfexAfterUnlock = unlockToBalance;
-            buyer.narfexAmount -= unlockToBalance;
-            buyer.availableBalance = unlockToBalance;
+            buyer.narfexAmount -= unlockAmount;
+            buyer.availableBalance = unlockAmount;
+            // Calculate 10% for next withdrawals
+            buyer.tenPercents = buyer.narfexAmount / 10;
+            emit UnlockTokensToBuyers(_msgSender, unlockAmount);
         } else {
             // Unlock 10% tokens after 120 days for buyers
             require (block.timestamp - buyer.unlockTime >= percentageUnlockSeconds);
             // Apply a new unlock time
             buyer.unlockTime += percentageUnlockSeconds;
-            // calculating 10% for user
-            unlockToBalance =  (buyer.narfexAfterUnlock * 100) / 1000;
-            if (buyer.narfexAmount < unlockToBalance) {
-                unlockToBalance = buyer.narfexAmount;
+
+            if (buyer.narfexAmount >= buyer.tenPercents) {
+                // Apply a new amount
+                buyer.narfexAmount -= buyer.tenPercents;
+                buyer.availableBalance += buyer.tenPercents;
+                emit UnlockTokensToBuyers(_msgSender, buyer.tenPercents);
             }
-            // Apply a new amount
-            buyer.narfexAmount -= unlockToBalance;
-            buyer.availableBalance += unlockToBalance;
         }
-        
-        emit UnlockTokensToBuyers(_msgSender, unlockToBalance);
     }
 
     /// @notice send from this contract unsold tokens and deposited BUSD tokens to the owner
