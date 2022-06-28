@@ -15,8 +15,8 @@ contract VestingForTeam {
     IBEP20 public tokenContract;  // the token being sold
     address public owner; // owner (ceo Narfex)
     uint256 public timestampPercantageUnlock; // point in time for unlock
-    uint256 public amountPercantageUnlock;
-    bool public calculatedAmountPercantageUnlock;
+    uint256 public amountPercantageUnlock; // amount of 10% for unlock
+    bool public calculatedAmountPercantageUnlock; // allow to calculate amountPercantageUnlock only once
 
     event ClaimNRFX(address owner, uint256 amount);
     event GetAmountPercantageUnlock(uint256 amountPercantageUnlock, bool calculatedAmountPercantageUnlock);
@@ -36,11 +36,15 @@ contract VestingForTeam {
         _;
     }
 
-    /// @notice this function withdrawal every half of year 10% of Narffex tokens from all suuply for team
+    /// @notice this function withdrawal every half of year 10% of Narfex tokens from all supply for team
     function claimNRFX() public onlyOwner {
         require(
             block.timestamp - timestampPercantageUnlock >= 183 days,
             "Wait half an year"
+        );
+        require(
+            calculatedAmountPercantageUnlock,
+            "Calculate amountPercantageUnlock"
         );
 
         timestampPercantageUnlock += 183 days;
@@ -49,6 +53,7 @@ contract VestingForTeam {
         emit ClaimNRFX(owner, amountPercantageUnlock);
     }
 
+    /// @notice calculate 10% for unlock
     function getAmountPercantageUnlock() public onlyOwner {
         require(
             !calculatedAmountPercantageUnlock,
