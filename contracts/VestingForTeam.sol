@@ -14,9 +14,12 @@ contract VestingForTeam {
 
     IBEP20 public tokenContract;  // the token being sold
     address public owner; // owner (ceo Narfex)
-    uint256 public percantageUnlock; // point in time for unlock
+    uint256 public timestampPercantageUnlock; // point in time for unlock
+    uint256 public amountPercantageUnlock;
+    bool public calculatedAmountPercantageUnlock;
 
     event ClaimNRFX(address owner, uint256 amount);
+    event GetAmountPercantageUnlock(uint256 amountPercantageUnlock, bool calculatedAmountPercantageUnlock);
 
     constructor (
         IBEP20  tokenContract_, 
@@ -24,19 +27,42 @@ contract VestingForTeam {
         ) {
         tokenContract = tokenContract_;
         owner = owner_;
-        percantageUnlock = block.timestamp;
+        timestampPercantageUnlock = block.timestamp;
     }
 
-    /// @notice this function withdrawal every half of a year 10% of Narffex tokens from all supply for team
-    function claimNRFX() public {
+    /// @notice verification of owner
+    modifier onlyOwner() {
         require(msg.sender == owner, "Not owner");
-        require(block.timestamp - percantageUnlock >= 183 days, "Wait half an year");
+        _;
+    }
 
-        percantageUnlock += 183 days;
-        uint256 _amount = tokenContract.balanceOf(address(this)) * 10 / 100;
-        tokenContract.transfer(owner, _amount);
+    /// @notice this function withdrawal every half of year 10% of Narffex tokens from all suuply for team
+    function claimNRFX() public onlyOwner {
+        require(
+            block.timestamp - timestampPercantageUnlock >= 183 days,
+            "Wait half an year"
+        );
 
-        emit ClaimNRFX(owner, _amount);
+        timestampPercantageUnlock += 183 days;
+        tokenContract.transfer(owner, amountPercantageUnlock);
+
+        emit ClaimNRFX(owner, amountPercantageUnlock);
+    }
+
+    function getAmountPercantageUnlock() public onlyOwner {
+        require(
+            !calculatedAmountPercantageUnlock,
+            "Calculated only once"
+        );
+        require(
+            tokenContract.balanceOf(address(this)) > 0,
+            "You should have Narfex on Balance"
+        );
+
+        amountPercantageUnlock = tokenContract.balanceOf(address(this)) * 100 / 1000;
+        calculatedAmountPercantageUnlock = true;
+
+        emit GetAmountPercantageUnlock(amountPercantageUnlock, calculatedAmountPercantageUnlock);
     }
 
 }
