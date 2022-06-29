@@ -53,6 +53,7 @@ contract NarfexTokenSale {
     uint constant WAD = 10 ** 18; // Decimal number with 18 digits of precision
 
     event Sold(address buyer, uint256 amount);
+    event FirstUnlock(address buyer, uint256 lockedAmount, uint256 narfexPrice, uint256 unlockedAmount);
     event UnlockTokensToBuyers(address buyer, uint256 amount); //after 60 days
     event AddedToWhitelist(address buyer);
     event Withdraw(address buyer, uint256 amount);
@@ -147,10 +148,12 @@ contract NarfexTokenSale {
             // Apply a new unlock time
             buyer.unlockTime = saleStartTime + toEndSecondsAmount + firstUnlockSeconds;
             // Calculate amount
-            uint unlockAmount = buyer.busdDeposit * WAD / getNarfexBUSDPrice();
+            uint price = getNarfexBUSDPrice();
+            uint unlockAmount = buyer.busdDeposit * WAD / price;
             if (buyer.narfexAmount < unlockAmount) {
                 unlockAmount = buyer.narfexAmount;
             }
+            emit FirstUnlock(_msgSender, buyer.narfexAmount, price, unlockAmount);
             // Apply a new amount
             buyer.busdDeposit = 0;
             buyer.narfexAmount -= unlockAmount;

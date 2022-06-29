@@ -6,12 +6,12 @@ async function main() {
   const Factory = await ethers.getContractFactory("Factory");
 
   const factory = await Factory.deploy(
-    "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56", // busdAddress
-    "0x3764Be118a1e09257851A3BD636D48DFeab5CAFE", // tokenContract
-    "0xFbA1906e682BF0032D26EfBA6bFC5229a663B968", // tokenSaleContract //0x9cE316e703C6BdcaD8ada3dCF2d3a4E3911C0d4c
+    "0xe9e7cea3dedca5984780bafc599bd69add087d56", // busdAddress
+    "0x3764be118a1e09257851a3bd636d48dfeab5cafe", // tokenContract
+    "0x2a8C50a502B81A6CDd64B16e21CF7e39704215e6", // tokenSaleContract
     "0xa4FF4DBb11F3186a1e96d3e8DD232E31159Ded9B", // factoryOwner
-    Number(1 * (10**18)).toFixed(0),
-    Number(5 * (10**18)).toFixed(0),
+    Number(100).toFixed(0).concat(Number(10**18).toFixed()), // min
+    Number(100 * 1000).toFixed(0).concat(Number(10**18).toFixed()), // max
   );
   await factory.deployed();
 
@@ -20,13 +20,13 @@ async function main() {
   const Pool = await ethers.getContractFactory("Pool");
 
   const pool = await Pool.deploy(
-    "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56", // busdAddress
-    "0x3764Be118a1e09257851A3BD636D48DFeab5CAFE", // tokenContract
-    "0xFbA1906e682BF0032D26EfBA6bFC5229a663B968", // tokenSaleContract
+    "0xe9e7cea3dedca5984780bafc599bd69add087d56", // busdAddress
+    "0x3764be118a1e09257851a3bd636d48dfeab5cafe", // tokenContract
+    "0x2a8C50a502B81A6CDd64B16e21CF7e39704215e6", // tokenSaleContract
     "0xa4FF4DBb11F3186a1e96d3e8DD232E31159Ded9B", // factoryOwner
-    Number(10 * (10**18)).toFixed(0), // maxPoolAmount
-    Number(1 * (10**18)).toFixed(0), // minimum deposit for user in pools
-    Number(5 * (10**18)).toFixed(0), // maximum deposit for user in pools
+    Number(100 * 1000).toFixed(0).concat(Number(10**18).toFixed()), // max pool amount
+    Number(100).toFixed(0).concat(Number(10**18).toFixed()), // min
+    Number(100 * 1000).toFixed(0).concat(Number(10**18).toFixed()), // max
   );
   await pool.deployed();
 

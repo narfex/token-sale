@@ -40,6 +40,12 @@ contract Pool {
     uint256 public maxUserDeposit; // maximum deposit for user
     uint256 public busdAmount; // all BUSD in contract before participate in token-sale
     uint constant WAD = 10 ** 18; // Decimal number with 18 digits of precision
+    uint constant NARFEX_COMMISSION = 2 * WAD / 100; // Narfex token commission in wei
+
+    event Deposit(address user, uint256 amount);
+    event Withdraw(address user, uint256 amount);
+    event Unlock(uint256 income);
+    event EmergencyWithdraw();
 
     constructor(
         IBEP20 _busdAddress,
@@ -81,6 +87,7 @@ contract Pool {
         busdAmount += amount;
         
         busdAddress.transferFrom(_msgSender, address(this), amount);
+        emit Deposit(_msgSender, amount);
     }
 
     /// @notice Withdraw NRFX for Crowdfunder
@@ -94,6 +101,7 @@ contract Pool {
             : _amount;
         crowd[_msgSender].availableBalance -= amount;
         nrfxAddress.transfer(_msgSender, amount);
+        emit Withdraw(_msgSender, amount);
     }
 
     /// @notice Transfer BUSD to token-sale contract for participate in token-sale
@@ -112,10 +120,14 @@ contract Pool {
         tokenSaleAddress.unlock();
         // Get the incoming balance before withdraw to divide it before it adds up to the pool balance
         uint income = tokenSaleAddress.getAvailableBalance(address(this));
+        // Subtract Narfex transfer commission
+        income -= income * NARFEX_COMMISSION / WAD;
         // Send NRFX to the Pool
         tokenSaleAddress.withdraw(0);
+        emit Unlock(income);
         for(uint256 i = 0; i < users.length; i++){
-            crowd[users[i]].availableBalance += getUserIncomeShare(income, users[i]);
+            uint256 share = getUserIncomeShare(income, users[i]);
+            crowd[users[i]].availableBalance += share;
             crowd[users[i]].deposited = false;
         }
     }
@@ -133,6 +145,7 @@ contract Pool {
             crowd[users[i]].deposited = false;
         }
         busdAmount = 0;
+        emit EmergencyWithdraw();
     }
 
     /// @notice get balance of BUSD tokens in this pool
@@ -158,10 +171,10 @@ contract Pool {
     /// @param _income Amount of tokens
     /// @param _user Address of Crowdfunder
     /// @return NRFX amount
-    function getUserIncomeShare(uint _income, address _user) internal view returns(uint256) {
+    function getUserIncomeShare(uint _income, address _user) public view returns(uint256) {
         uint share = getUserShare(_user);
         return share > 0
-            ? _income * WAD / share
+            ? _income * share / WAD
             : 0;
     }
 

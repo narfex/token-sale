@@ -1,11 +1,10 @@
 module.exports = [
-	"0xcDA8eD22bB27Fe84615f368D09B5A8Afe4a99320", // tokenContract
-    "0x78867BbEeF44f2326bF8DDd1941a4439382EF2A7", // busdAddress
-    800000, // saleSupply
-    60 * 60 * 3, // timeEndSale in seconds 7 days = 604800
-    "0x78867BbEeF44f2326bF8DDd1941a4439382EF2A7", // BUSD in bsc testnet
-    "0xcDA8eD22bB27Fe84615f368D09B5A8Afe4a99320", // NarfexAddress in bsc testnet
-    "0xf47644e079303263a2de0829895d000900d2fab8", // pair Narfex -> BUSD in PancakeSwap
-    1, // minimum amount of deposit to buy in busd for each user
-    3, // maximum amount of deposit for sale in busd for each user
+	"0x3764be118a1e09257851a3bd636d48dfeab5cafe", // tokenContract
+  "0xe9e7cea3dedca5984780bafc599bd69add087d56", // busdAddress
+  "0x1570fd96f93629c3b0bfa1e892ead924944635f7", // pair Narfex -> BUSD in PancakeSwap
+  Number(30 * 1000).toFixed(0).concat(Number(10**18).toFixed()), // min
+  Number(100 * 1000).toFixed(0).concat(Number(10**18).toFixed()), // max
+  Number(0.4 * (10**18)).toFixed(0), // First Narfex Price
+  60 * 60 * 24 * 60, // First unlock in seconds
+  60 * 60 * 24 * 120, // Percentage unlock in seconds
 ];

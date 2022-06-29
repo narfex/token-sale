@@ -5,6 +5,6 @@ module.exports = [
   Number(1 * (10**18)).toFixed(0), // min
   Number(5 * (10**18)).toFixed(0), // max
   Number(0.4 * (10**18)).toFixed(0), // First Narfex Price
-  60 * 60 * 2, // First unlock in seconds
-  60 * 60 * 1, // Percentage unlock in seconds
+  60 * 10, // First unlock in seconds
+  60 * 30, // Percentage unlock in seconds
 ];
