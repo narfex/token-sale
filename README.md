@@ -127,7 +127,7 @@ On successful execution of the function, event is generated
  `_amount` Amount NRFX to withdraw
 
 5. If `Pool` can not have enogh money to participate in token-sale, creator of `Pool` or Narfex team can use function to withdraw for all user's BUSD deposits
-```
+```solidity
    function emergencyWithdrawBUSD()
 ```
  
