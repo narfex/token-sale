@@ -49,30 +49,47 @@ On successful execution of the function, event is generated
    function getUSDPrice(address _token)
 ```
     In this case, `_token` is address of Narfex, in PancakeFactory.
+
+## ***For now you already know how to buy Narfex in private sale, Good luck***
+
+## ***To unlocking Narfex after `firstUnlock`***
+1. We using price in BUSD from `PancakeFactory`
+```solidity
+   function getUSDPrice(address _token)
+```
+    In this case, `_token` is address of Narfex, in PancakeFactory.
     
+## ***Variables for each buyer***
+
+`narfexAmount` // Current narfex amount left //
+`tenPercents` // Narfex amount left after the first unlock //
+`busdDeposit` // deposit for buy tokens in private sale //
+`unlockTime` // time point when user unlock tokens //
+`availableBalance` // token balance to withdraw //
+`isNarfexPayed` // payed narfexAmount = busdDeposit.mul(priceNarfex) after 60 days //
+`isWhitelisted` // added to whitelist //
+
 ## ***Variables in contract***
 
-`tokenContract`  // IBEP20 the token being sold //
+`narfexContract`  // IBEP20 the token being sold //
 
 `busdAddress` // IBEP20 payment token address //
 
 `owner` // deployer of contract //
 
-`saleSupply` // the number of tokens available for purchase //
+`saleStartTime` // starting sale point //
 
-`timeStartSale` // starting sale point //
-
-`timeEndSale` // period of time in seconds for private sale for whitelist users //
+`toEndSecondsAmount` // period of time in seconds for private sale for whitelist users //
 
 `minAmountForUser` // minimum amount of deposit in busd to buy for each user //
 
 `maxAmountForUser` // maximum amount of deposit in busd for each user //
 
-`saleStarted` // from this point sale is started //
+`isSaleStarted` // from this point sale is started //
 
-`firstUnlock` // period of time for unlock 100% BUSD price //
+`firstUnlockSeconds` // period of time for unlock 100% BUSD price //
 
-`percantageUnlock` // period of time to unlock 10% of locked Narfex //
+`percentageUnlockSeconds` // period of time to unlock 10% of locked Narfex //
 
 `firstNarfexPrice` // price of Narfex to buy locked tokens //
 
@@ -80,4 +97,37 @@ On successful execution of the function, event is generated
 
 `NarfexAddress` // Narfex address for BUSD price //
 
-`BUSD` // BUSD address in current network //
+## ***`Factory` contract***
+1. `Factory` allow to all users to make pools for crowdfunding
+```solidity
+   function createPool(uint256 _maxAmount)
+```
+ you have to write `_maxAmount` variable it's a max crowdfunding amount of this pool
+
+## ***How to participate in crowdfunding for token-sale `Narfex`***
+1. `Pool` allow to all users to deposit BUSD less than minimum amount in token-sale contract
+```solidity
+   function depositBUSD(uint256 amount)
+```
+ you have to write `minUserDeposit` < `amount` < `maxUserDeposit` of deposit in this pool in BUSD
+
+2. When `maxPoolAmount` = BUSD balance of pool and pool in whitelist of token-sale users can participate im token-sale
+```solidity
+   function buyNRFX()
+```
+
+3. After period of time for unlock, users in pool can use function to unlock Narfex and than withdraw
+```solidity
+   function unlockNRFX()
+```
+
+```solidity
+   function withdrawNRFX(uint256 _amount)
+```
+ `_amount` Amount NRFX to withdraw
+
+5. If `Pool` can not have enogh money to participate in token-sale, creator of `Pool` or Narfex team can use function to withdraw for all user's BUSD deposits
+```
+   function emergencyWithdrawBUSD()
+```
+ 
