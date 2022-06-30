@@ -48,6 +48,8 @@ contract NarfexTokenSale {
     uint256 public firstUnlockSeconds;// period of time for unlock 100% BUSD price
     uint256 public percentageUnlockSeconds;// period of time to unlock 10% of locked Narfex
     uint256 public firstNarfexPrice;// price of Narfex to buy locked tokens
+    uint256 public amountNarfexForSale; // maximum supply for all sale
+    uint256 public countSoldNarfex; // counter of locked Narfex in buyTokens
 
     address public pairAddress; // pair Narfex -> BUSD in PancakeSwap
     uint constant WAD = 10 ** 18; // Decimal number with 18 digits of precision
@@ -96,10 +98,15 @@ contract NarfexTokenSale {
     }
 
     /// @notice starting sale with pairAddress of Narfex-BUSD in PancakeSwap
-    function startSale(uint256 _toEndSecondsAmount) public onlyOwner {
+    /// @param _toEndSecondsAmount period of sale in seconds (since point of time saleStartTime)
+    /// @param _amountNarfexForSale maximum supply for all sale in wei (10**18)
+    function startSale(uint256 _toEndSecondsAmount, uint256 _amountNarfexForSale) public onlyOwner {
+        require(_amountNarfexForSale <= getBalanceNarfex(), "Maximum supply too big");
+
         saleStartTime = block.timestamp;
         isSaleStarted = true;
         toEndSecondsAmount = _toEndSecondsAmount;
+        amountNarfexForSale = _amountNarfexForSale;
     }
 
     /// @notice users buy locked tokens by transferring BUSD to this contract 
@@ -109,10 +116,11 @@ contract NarfexTokenSale {
 
         require(isSaleStarted, "Sorry, sale not started");
         require(block.timestamp - saleStartTime < toEndSecondsAmount, "Sorry, sale already end");
-        require(amount >= minAmountForUser, "Too big deposit");
-        require(amount <= maxAmountForUser - buyers[_msgSender].busdDeposit, "Too small deposit");
+        require(amount >= minAmountForUser, "Too small deposit");
+        require(amount <= maxAmountForUser - buyers[_msgSender].busdDeposit, "Too big deposit");
         uint256 scaledAmount = amount * WAD / firstNarfexPrice;
-        require(scaledAmount <= getBalanceNarfex(), "You can not buy more than maximum supply");
+        require(countSoldNarfex + scaledAmount <= amountNarfexForSale, "You can not buy more than maximum supply");
+        countSoldNarfex += scaledAmount;
         buyers[_msgSender].busdDeposit += amount;
         buyers[_msgSender].narfexAmount += scaledAmount;
         
@@ -180,7 +188,7 @@ contract NarfexTokenSale {
     function saleEnded() public onlyOwner{
         require(block.timestamp - saleStartTime >= toEndSecondsAmount, "Sorry, sale has not ended yet");
         // Send unsold tokens to the owner
-        narfexContract.transfer(owner, getBalanceNarfex());
+        narfexContract.transfer(owner, getBalanceNarfex() - countSoldNarfex);
         // Send BUSD tokens to the owner
         busdAddress.transfer(owner, getBalanceBUSD());
     }
@@ -260,6 +268,12 @@ contract NarfexTokenSale {
     /// @param _maxAmountForUser maximum deposit BUSD in buyTokens function
     function setMaxAmountForUser (uint256 _maxAmountForUser) public onlyOwner{
         maxAmountForUser = _maxAmountForUser;
+    }
+
+    /// @notice changes maximum supply for all sale
+    /// @param _amountNarfexForSale maximum supply for all sale
+    function setAmountNarfexForSale(uint256 _amountNarfexForSale) public onlyOwner{
+        amountNarfexForSale = _amountNarfexForSale;
     }
 
     /// @notice Returns the timestamp of the next unlock
