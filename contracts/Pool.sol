@@ -9,12 +9,11 @@ interface IBEP20 {
     function approve(address spender, uint256 amount) external returns (bool);
 }
 
-interface INarfexTokenSale {
-    function buyTokens(uint256 amount) external;
-    function unlock() external;
-    function withdraw(uint256 _numberOfTokens) external;
+interface INarfexPrivateSale {
+    function buy(uint256 amount) external;
+    function withdraw() external;
     function isWhitelisted(address _address) external view returns(bool);
-    function getAvailableBalance(address _address) external view returns(uint256);
+    function getAvailableToWithdraw(address _address) external view returns(uint);
 }
 
 contract Pool {
@@ -33,7 +32,7 @@ contract Pool {
     IBEP20 public nrfxAddress; // address of Narfex
     address public _owner; //owner of this pool
     address public factoryOwner; // owner of factory contract
-    INarfexTokenSale public tokenSaleAddress; // address of token-sale contract
+    INarfexPrivateSale public tokenSaleAddress; // address of token-sale contract
     bool public isNarfexLocked; // from this point users can not deposit busd to this pool
     uint256 public maxPoolAmount; // maximum of crowdfunding amount
     uint256 public minUserDeposit; // minimum deposit for user
@@ -50,7 +49,7 @@ contract Pool {
     constructor(
         IBEP20 _busdAddress,
         IBEP20 _nrfxAddress,
-        INarfexTokenSale _tokenSaleAddress,
+        INarfexPrivateSale _tokenSaleAddress,
         address _factoryOwner,
         uint256 _maxPoolAmount,
         uint256 _minUserDeposit,
@@ -90,20 +89,6 @@ contract Pool {
         emit Deposit(_msgSender, amount);
     }
 
-    /// @notice Withdraw NRFX for Crowdfunder
-    /// @param _amount Amount NRFX to withdraw
-    function withdrawNRFX(uint256 _amount) external {
-        address _msgSender = msg.sender;
-
-        // Amount must be equal or less than crowdfunder balance
-        uint amount = _amount > crowd[_msgSender].availableBalance
-            ? crowd[_msgSender].availableBalance
-            : _amount;
-        crowd[_msgSender].availableBalance -= amount;
-        nrfxAddress.transfer(_msgSender, amount);
-        emit Withdraw(_msgSender, amount);
-    }
-
     /// @notice Transfer BUSD to token-sale contract for participate in token-sale
     function buyNRFX() external {
         require(isPoolCollected(), "Crowdfunding in this pool is over");
@@ -111,25 +96,40 @@ contract Pool {
         require(busdBalance == busdAmount, "The pool balance is empty");
         isNarfexLocked = true;
         busdAddress.approve(address(tokenSaleAddress), busdBalance);
-        tokenSaleAddress.buyTokens(busdBalance);
+        tokenSaleAddress.buy(busdBalance);
     }
 
     /// @notice unlocking NRFX in INTokenSale contract
-    function unlockNRFX() external {
+    function unlockNRFX() internal {
         require(isNarfexLocked, "Crowdfunding in this pool is over");
-        tokenSaleAddress.unlock();
         // Get the incoming balance before withdraw to divide it before it adds up to the pool balance
-        uint income = tokenSaleAddress.getAvailableBalance(address(this));
+        uint income = tokenSaleAddress.getAvailableToWithdraw(address(this));
+        if (income == 0) return;
         // Subtract Narfex transfer commission
         income -= income * NARFEX_COMMISSION / WAD;
         // Send NRFX to the Pool
-        tokenSaleAddress.withdraw(0);
+        tokenSaleAddress.withdraw();
         emit Unlock(income);
         for(uint256 i = 0; i < users.length; i++){
             uint256 share = getUserIncomeShare(income, users[i]);
             crowd[users[i]].availableBalance += share;
             crowd[users[i]].deposited = false;
         }
+    }
+
+    /// @notice Withdraw NRFX for Crowdfunder
+    /// @param _amount Amount NRFX to withdraw
+    function withdrawNRFX(uint256 _amount) external {
+        address _msgSender = msg.sender;
+
+        unlockNRFX();
+        // Amount must be equal or less than crowdfunder balance
+        uint amount = _amount > crowd[_msgSender].availableBalance
+            ? crowd[_msgSender].availableBalance
+            : _amount;
+        crowd[_msgSender].availableBalance -= amount;
+        nrfxAddress.transfer(_msgSender, amount);
+        emit Withdraw(_msgSender, amount);
     }
 
     /// @notice Withdraw BUSD deposits for all users (for some issues)
@@ -189,7 +189,7 @@ contract Pool {
     /// @param _user Crowdfunder address
     /// @return NRFX amount
     function getUserNRFXBalance(address _user) public view returns(uint) {
-        uint income = tokenSaleAddress.getAvailableBalance(address(this));
+        uint income = tokenSaleAddress.getAvailableToWithdraw(address(this));
         return crowd[_user].availableBalance + getUserIncomeShare(income, _user);
     }
 

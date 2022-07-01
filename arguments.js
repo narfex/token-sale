@@ -4,7 +4,7 @@ module.exports = [
   "0x1570fd96f93629c3b0bfa1e892ead924944635f7", // pair Narfex -> BUSD in PancakeSwap
   Number(30 * 1000).toFixed(0).concat(Number(10**18).toFixed()), // min
   Number(100 * 1000).toFixed(0).concat(Number(10**18).toFixed()), // max
-  Number(0.4 * (10**18)).toFixed(0), // First Narfex Price
   60 * 60 * 24 * 60, // First unlock in seconds
   60 * 60 * 24 * 120, // Percentage unlock in seconds
+  Number(0.4 * (10**18)).toFixed(0), // First Narfex Price
 ];

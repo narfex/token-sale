@@ -13,7 +13,7 @@ contract Factory {
 
     IBEP20 public busdAddress; // BUSD address
     IBEP20 public NRFX; // address of Nrafex
-    INarfexTokenSale public tokenSaleContract; // address of token-sale contract
+    INarfexPrivateSale public tokenSaleContract; // address of token-sale contract
     address public factoryOwner; // owner of factory
     uint256 public minUserAmount; // minimum deposit for user in pools
     uint256 public maxUserAmount; // maximum deposit for user in pools
@@ -29,7 +29,7 @@ contract Factory {
     constructor(
         IBEP20 _busdAddress,
         IBEP20 _NRFX,
-        INarfexTokenSale _tokenSaleContract,
+        INarfexPrivateSale _tokenSaleContract,
         address _factoryOwner,
         uint _minUserAmount,
         uint _maxUserAmount
