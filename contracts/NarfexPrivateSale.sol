@@ -250,7 +250,9 @@ contract NarfexPrivateSale {
         // The number of Narfex equivalent to deposited BUSD amount
         uint depositEquivalent = getNarfexAmount(user.deposit, narfexEndPrice);
         // The profit total size
-        uint profit = user.narfexLocked - depositEquivalent;
+        uint profit = user.narfexLocked > depositEquivalent
+            ? user.narfexLocked - depositEquivalent
+            : 0;
         // Narfex amount for each period
         uint profitFraction = profit * profitFractination / WAD;
         // How much should have been paid by now
