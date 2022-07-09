@@ -9,6 +9,7 @@ interface IBEP20 {
 /// @title Vesting contract for Narfex team
 /// @author Potemkin Viktor
 /// @notice Transfering every 6 month 10% of Narfex tokens from all team supply
+// address in bsc mainnet 0x740081287885D35691F9b85A5792D65B4d8d9DE4
 
 contract VestingForTeam {
 
